@@ -18,7 +18,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) { router.push("/auth"); return; }
+      if (!user) { router.push("/landing"); return; }
       const snap = await getDoc(doc(db, "users", user.uid));
       const data = snap.data();
       if (!data?.pledged) { router.push("/pledge"); return; }
@@ -52,7 +52,7 @@ export default function HomePage() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    router.push("/auth");
+    router.push("/landing");
   };
 
   if (checking) return (
@@ -66,7 +66,6 @@ export default function HomePage() {
 
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
-
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 12px rgba(91,168,114,0.25)" }}>
         <div>
           <div style={{ color:"#fff", fontSize:20, fontWeight:800 }}>🌿 ぱにいき</div>
@@ -81,7 +80,6 @@ export default function HomePage() {
       </div>
 
       <div style={{ padding:"16px 16px 100px" }}>
-
         <div style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
           <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{icon}</div>
           <div>
@@ -107,10 +105,10 @@ export default function HomePage() {
             { icon:"🗺", label:"近くの仲間", desc:"300m以内の仲間", path:"/map" },
             { icon:"📅", label:"カレンダー", desc:"発作・受診を記録", path:"/calendar" },
             { icon:"💊", label:"薬の管理", desc:"飲み忘れ防止・記録", path:"/medicine" },
-{ icon:"📋", label:"薬一覧", desc:"処方薬の情報", path:"/meds" },
+            { icon:"📋", label:"薬一覧", desc:"処方薬の情報", path:"/meds" },
             { icon:"❓", label:"質問箱", desc:"仲間に相談する", path:"/qa" },
             { icon:"💡", label:"豆知識", desc:"経験をシェア", path:"/tips" },
-           { icon:"📍", label:"場所情報", desc:"クリニック・休める場所", path:"/places" },
+            { icon:"📍", label:"場所情報", desc:"クリニック・休める場所", path:"/places" },
             { icon:"📵", label:"偽電話", desc:"その場を離れる", path:"/fake-call" },
           ].map(item => (
             <button key={item.path} onClick={() => router.push(item.path)}
