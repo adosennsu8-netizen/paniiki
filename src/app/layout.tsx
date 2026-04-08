@@ -3,7 +3,7 @@ import "./globals.css";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "ぱにいき — パニック障害と生きていく",
+  title: "ぱにいき - パニック障害と生きていく",
   description: "パニック障害・不安障害の当事者同士がつながるアプリです。発作サポート・記録・仲間との交流ができます。",
 };
 
@@ -15,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <meta charSet="utf-8" />
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2919662383586718"
