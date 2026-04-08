@@ -27,7 +27,7 @@ export default function HomePage() {
       setEmail(user.email || "");
       setUid(user.uid);
       setNickname(data?.nickname || "");
-      setIcon(data?.icon || "??");
+      setIcon(data?.icon || "🍀");
       setChecking(false);
     });
     return () => unsub();
@@ -58,8 +58,8 @@ export default function HomePage() {
   if (checking) return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
       <div style={{ textAlign:"center" }}>
-        <div style={{ fontSize:48, marginBottom:12 }}>??</div>
-        <div style={{ fontSize:14, color:"#5a7a65" }}>�ǂݍ��ݒ��c</div>
+        <div style={{ fontSize:48, marginBottom:12 }}>🌿</div>
+        <div style={{ fontSize:14, color:"#5a7a65" }}>読み込み中…</div>
       </div>
     </div>
   );
@@ -68,11 +68,11 @@ export default function HomePage() {
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 12px rgba(91,168,114,0.25)" }}>
         <div>
-          <div style={{ color:"#fff", fontSize:20, fontWeight:800 }}>?? �ςɂ���</div>
-          <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9, letterSpacing:"0.15em" }}>�p�j�b�N��Q�Ɛ����Ă���</div>
+          <div style={{ color:"#fff", fontSize:20, fontWeight:800 }}>🌿 ぱにいき</div>
+          <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9, letterSpacing:"0.15em" }}>パニック障害と生きていく</div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>?</span>}
+          {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>}
           <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)" }}>
             {icon}
           </div>
@@ -84,32 +84,21 @@ export default function HomePage() {
           <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{icon}</div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#2d4a38" }}>{nickname}</div>
-            <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>{isPremium ? "? �v���~�A�����" : "?? �����v����"}</div>
+            <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>{isPremium ? "⭐ プレミアム会員" : "🆓 無料プラン"}</div>
           </div>
         </div>
 
-        {!isPremium && (
-          <div style={{ background:"#fef3cd", borderRadius:16, padding:16, border:"1.5px solid #c9963a", marginBottom:12 }}>
-            <div style={{ fontSize:14, fontWeight:700, color:"#c9963a", marginBottom:6 }}>? �v���~�A���ɃA�b�v�O���[�h</div>
-            <div style={{ fontSize:11, color:"#5a7a65", lineHeight:1.8, marginBottom:12 }}>���z500�~�œ��e�E�R�����g�E����T�|�[�g���g���܂��B</div>
-            <button onClick={handlePremium} disabled={loading}
-              style={{ width:"100%", background:"linear-gradient(135deg,#c9963a,#e8b84b)", color:"#fff", border:"none", borderRadius:12, padding:"11px", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-              {loading ? "�������c" : "? �v���~�A���ɂȂ�i���z500�~�j"}
-            </button>
-          </div>
-        )}
-
-        <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:10 }}>���j���[</div>
+        <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:10 }}>メニュー</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
           {[
-            { icon:"??", label:"�߂��̒���", desc:"300m�ȓ��̒���", path:"/map" },
-            { icon:"??", label:"�J�����_�[", desc:"����E��f���L�^", path:"/calendar" },
-            { icon:"??", label:"��̊Ǘ�", desc:"���ݖY��h�~�E�L�^", path:"/medicine" },
-            { icon:"??", label:"��ꗗ", desc:"������̏��", path:"/meds" },
-            { icon:"?", label:"���┠", desc:"���Ԃɑ��k����", path:"/qa" },
-            { icon:"??", label:"���m��", desc:"�o�����V�F�A", path:"/tips" },
-            { icon:"??", label:"�ꏊ���", desc:"�N���j�b�N�E�x�߂�ꏊ", path:"/places" },
-            { icon:"??", label:"�U�d�b", desc:"���̏�𗣂��", path:"/fake-call" },
+            { icon:"🗺", label:"近くの仲間", desc:"300m以内の仲間", path:"/map" },
+            { icon:"📅", label:"カレンダー", desc:"発作・受診を記録", path:"/calendar" },
+            { icon:"💊", label:"薬の管理", desc:"飲み忘れ防止・記録", path:"/medicine" },
+            { icon:"📋", label:"薬一覧", desc:"処方薬の情報", path:"/meds" },
+            { icon:"❓", label:"質問箱", desc:"仲間に相談する", path:"/qa" },
+            { icon:"💡", label:"豆知識", desc:"経験をシェア", path:"/tips" },
+            { icon:"📍", label:"場所情報", desc:"クリニック・休める場所", path:"/places" },
+            { icon:"📵", label:"偽電話", desc:"その場を離れる", path:"/fake-call" },
           ].map(item => (
             <button key={item.path} onClick={() => router.push(item.path)}
               style={{ background:"#fff", border:"1px solid #c8e6d0", borderRadius:16, padding:"16px 12px", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -122,12 +111,17 @@ export default function HomePage() {
 
         <button onClick={() => router.push("/sos")}
           style={{ width:"100%", background:"linear-gradient(135deg,#e8938a,#c96060)", color:"#fff", border:"none", borderRadius:16, padding:"18px", fontSize:18, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(201,96,96,0.35)", marginBottom:12, letterSpacing:"0.05em" }}>
-          ?? ����T�|�[�g
+          🆘 発作サポート
+        </button>
+
+        <button onClick={() => router.push("/help")}
+          style={{ width:"100%", background:"#fff", color:"#5a7a65", border:"1px solid #c8e6d0", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer", marginBottom:10 }}>
+          ❓ ヘルプ・使い方
         </button>
 
         <button onClick={handleLogout}
           style={{ width:"100%", background:"#e8f5ec", color:"#8aaa95", border:"none", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer" }}>
-          ���O�A�E�g
+          ログアウト
         </button>
       </div>
     </div>
