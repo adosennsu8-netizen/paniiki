@@ -5,6 +5,10 @@ import Script from "next/script";
 export const metadata: Metadata = {
   title: "ぱにいき - パニック障害と生きていく",
   description: "パニック障害・不安障害の当事者同士がつながるアプリです。発作サポート・記録・仲間との交流ができます。",
+  icons: {
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>",
+    apple: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>",
+  },
 };
 
 export default function RootLayout({
