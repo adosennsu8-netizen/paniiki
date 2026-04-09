@@ -52,10 +52,7 @@ export default function AddToHomePage() {
           style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"14px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
           🌿 アプリをはじめる
         </button>
-        <button onClick={() => router.push("/")}
-          style={{ width:"100%", background:"none", color:"#8aaa95", border:"none", fontSize:12, cursor:"pointer" }}>
-          スキップ
-        </button>
+       
       </div>
     </div>
   );
