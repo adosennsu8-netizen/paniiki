@@ -160,17 +160,29 @@ export default function MedicinePage() {
       <div style={{ margin:"12px 16px 0" }}>
         {notifEnabled ? (
           <div style={{ background:"#d4edda", borderRadius:12, padding:"10px 14px", border:"1px solid #7bbf8c" }}>
-            <div style={{ fontSize:12, color:"#4a9060" }}>🔔 通知が有効です。アラーム時刻に通知が届きます。</div>
+            <div style={{ fontSize:12, color:"#4a9060" }}>🔔 通知が有効です。アプリを開いている間、アラーム時刻に通知が届きます。</div>
           </div>
         ) : (
           <div style={{ background:"#fde8e8", borderRadius:12, padding:"12px 14px", border:"1px solid #e07070", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
-            <div style={{ fontSize:12, color:"#e07070", lineHeight:1.7 }}>🔔 通知が無効です。<br/>有効にするとアラーム時刻に通知が届きます。</div>
+            <div style={{ fontSize:12, color:"#e07070", lineHeight:1.7 }}>🔔 通知が無効です。</div>
             <button onClick={handleEnableNotification}
               style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", flexShrink:0 }}>
               有効にする
             </button>
           </div>
         )}
+        <div style={{ background:"#fef3cd", borderRadius:12, padding:"10px 14px", marginTop:8, border:"1px solid #c9963a" }}>
+          <div style={{ fontSize:12, color:"#c9963a", lineHeight:1.8 }}>
+            ⚠️ 通知はアプリを開いている間のみ届きます。確実な飲み忘れ防止のために、スマホの標準アラームとの併用をおすすめします。</div>
+          
+        
+      
+            <button onClick={handleEnableNotification}
+              style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", flexShrink:0 }}>
+              有効にする
+            </button>
+          </div>
+        )
       </div>
 
       {/* 今日の薬 */}
