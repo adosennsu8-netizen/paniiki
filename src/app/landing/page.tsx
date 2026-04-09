@@ -1,16 +1,49 @@
+"use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+    return () => unsub();
+  }, []);
+
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN','BIZ UDPGothic',sans-serif" }}>
 
       {/* ヘッダー */}
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ color:"#fff", fontSize:22, fontWeight:800 }}>🌿 ぱにいき</div>
-        <Link href="/auth" style={{ background:"rgba(255,255,255,0.25)", color:"#fff", borderRadius:20, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
-          ログイン / 登録
-        </Link>
+        {isLoggedIn ? (
+          <button onClick={() => router.push("/")}
+            style={{ background:"rgba(255,255,255,0.25)", color:"#fff", borderRadius:20, padding:"8px 18px", fontSize:13, fontWeight:600, border:"none", cursor:"pointer" }}>
+            アプリを開く
+          </button>
+        ) : (
+          <Link href="/auth" style={{ background:"rgba(255,255,255,0.25)", color:"#fff", borderRadius:20, padding:"8px 18px", fontSize:13, fontWeight:600, textDecoration:"none" }}>
+            ログイン / 登録
+          </Link>
+        )}
       </div>
+
+      {/* ログイン済みバナー */}
+      {isLoggedIn && (
+        <div style={{ background:"#d4edda", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", border:"1px solid #7bbf8c" }}>
+          <div style={{ fontSize:13, color:"#4a9060", fontWeight:600 }}>🌿 ログイン中です</div>
+          <button onClick={() => router.push("/")}
+            style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:20, padding:"6px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+            アプリへ →
+          </button>
+        </div>
+      )}
 
       {/* ヒーロー */}
       <div style={{ background:"linear-gradient(160deg,#d4edda,#e8f5ec)", padding:"60px 24px 48px", textAlign:"center" }}>
@@ -80,7 +113,7 @@ export default function LandingPage() {
             { text:"薬の飲み忘れが多かったのですが、アラーム機能のおかげで改善されました。カレンダーで確認できるのも便利です。", icon:"🐱", name:"ねこさん", tag:"20代・女性" },
             { text:"会議中に発作が来そうになった時、偽電話機能で自然にその場を離れられました。当事者目線の機能だと感じました。", icon:"🦊", name:"きつねさん", tag:"30代・男性" },
           ].map((v, i) => (
-            <div key={i} style={{ background:"#e8f5ec", borderRadius:16, padding:20, marginBottom:16, border:"1px solid #c8e6d0", position:"relative" }}>
+            <div key={i} style={{ background:"#e8f5ec", borderRadius:16, padding:20, marginBottom:16, border:"1px solid #c8e6d0" }}>
               <div style={{ fontSize:32, color:"#5ba872", marginBottom:8, lineHeight:1 }}>"</div>
               <p style={{ fontSize:14, color:"#2d4a38", lineHeight:1.9, margin:"0 0 12px" }}>{v.text}</p>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -156,26 +189,47 @@ export default function LandingPage() {
           <div style={{ background:"#fff", borderRadius:16, padding:24, border:"1px solid #c8e6d0" }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#4a9060", marginBottom:8 }}>🆓 無料</div>
             <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8, textAlign:"left" }}>
-              ・仲間の確認<br/>
-              ・カレンダー記録<br/>
-              ・薬一覧<br/>
-              ・質問箱を読む
+              ・仲間の確認<br/>・カレンダー記録<br/>・薬一覧<br/>・質問箱を読む
             </div>
           </div>
           <div style={{ background:"#fef3cd", borderRadius:16, padding:24, border:"1.5px solid #c9963a" }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#c9963a", marginBottom:4 }}>⭐ プレミアム</div>
             <div style={{ fontSize:13, color:"#c9963a", fontWeight:600, marginBottom:8 }}>月額500円</div>
             <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8, textAlign:"left" }}>
-              ・投稿・回答<br/>
-              ・発作サポート<br/>
-              ・呼吸アシスト<br/>
-              ・偽電話機能
+              ・投稿・回答<br/>・発作サポート<br/>・呼吸アシスト<br/>・偽電話機能
             </div>
           </div>
         </div>
         <div style={{ background:"#d4edda", borderRadius:12, padding:"12px 20px", display:"inline-block", marginBottom:24, border:"1px solid #7bbf8c" }}>
           <div style={{ fontSize:13, color:"#4a9060", fontWeight:700 }}>🌿 2026年5月末まで全機能無料開放中！</div>
         </div>
+
+        {/* ブックマーク案内 */}
+        <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:24, border:"1px solid #c8e6d0", textAlign:"left", maxWidth:500, margin:"0 auto 24px" }}>
+          <div style={{ fontSize:15, fontWeight:800, color:"#2d4a38", marginBottom:12 }}>📱 ホーム画面に追加しよう</div>
+          <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.9, marginBottom:16 }}>
+            毎回URLを入力しなくてもいいように、ホーム画面に追加することをおすすめします。
+          </div>
+          <div style={{ background:"#e8f5ec", borderRadius:12, padding:14, marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:6 }}>🍎 iPhoneの場合</div>
+            <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.9 }}>
+              1. Safariでこのページを開く<br/>
+              2. 下の共有ボタン（□↑）をタップ<br/>
+              3.「ホーム画面に追加」をタップ<br/>
+              4.「追加」をタップして完了
+            </div>
+          </div>
+          <div style={{ background:"#e8f5ec", borderRadius:12, padding:14 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:6 }}>🤖 Androidの場合</div>
+            <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.9 }}>
+              1. Chromeでこのページを開く<br/>
+              2. 右上のメニュー（⋮）をタップ<br/>
+              3.「ホーム画面に追加」をタップ<br/>
+              4.「追加」をタップして完了
+            </div>
+          </div>
+        </div>
+
         <div style={{ display:"block" }}>
           <Link href="/auth" style={{ display:"inline-block", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", borderRadius:16, padding:"14px 36px", fontSize:16, fontWeight:800, textDecoration:"none" }}>
             今すぐ無料登録
