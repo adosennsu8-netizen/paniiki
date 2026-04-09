@@ -39,7 +39,7 @@ export default function ProfileSetupPage() {
         imgSrc: imgSrc || "",
         updatedAt: serverTimestamp(),
       }, { merge: true });
-      router.push("/");
+      router.push("/add-to-home");
     } catch (e) {
       console.error(e);
     } finally {
