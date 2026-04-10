@@ -13,7 +13,7 @@ export default function SOSPage() {
 
   useEffect(() => {
     if (breathPhase === "ready") return;
-    const timings: Record<string, number> = { in:4000, hold:2000, out:6000 };
+    const timings: Record<string, number> = { in:6000, hold:1000, out:6000 };
     const next: Record<string, "in" | "hold" | "out"> = { in:"hold", hold:"out", out:"in" };
     breathTimer.current = setTimeout(() => {
       setBreathPhase(next[breathPhase]);
