@@ -83,7 +83,7 @@ export default function SOSPage() {
           <div style={{ fontSize:72, marginBottom:24 }}>🌿</div>
           <div style={{ color:"#2d4a38", fontSize:18, marginBottom:10, fontWeight:700 }}>準備ができたら始めましょう</div>
           <div style={{ color:"#8aaa95", fontSize:13, marginBottom:48, textAlign:"center", lineHeight:2.0 }}>
-            4秒　吸って<br/>2秒　止めて<br/>6秒　吐く
+            6秒　吸って<br/>1秒　止めて<br/>6秒　吐く
           </div>
           <button onClick={() => setBreathPhase("in")}
             style={{ background:"linear-gradient(135deg,#7bbf8c,#5ba872)", color:"#fff", border:"none", borderRadius:40, padding:"18px 56px", fontSize:18, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 20px rgba(91,168,114,0.35)" }}>
