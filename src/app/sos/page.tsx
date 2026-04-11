@@ -6,7 +6,7 @@ const DEFAULT_ALONE_TEXT = "パニック障害の発作が出ていますが、�
 
 export default function SOSPage() {
   const router = useRouter();
-  const [view, setView] = useState<"menu" | "breathing" | "alone">("menu");
+  const [view, setView] = useState<"menu" | "breathing" | "alone" | "edit">("menu");
   const [breathPhase, setBreathPhase] = useState<"ready" | "in" | "hold" | "out">("ready");
   const [aloneText, setAloneText] = useState(DEFAULT_ALONE_TEXT);
   const breathTimer = useRef<NodeJS.Timeout | null>(null);
@@ -60,12 +60,19 @@ export default function SOSPage() {
         </button>
 
         <button onClick={() => setView("alone")}
-          style={{ width:"100%", background:"#fff", borderRadius:20, padding:"22px 20px", marginBottom:12, border:"1.5px solid #f5c5c5", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:16, boxShadow:"0 3px 12px rgba(232,147,138,0.2)" }}>
+          style={{ width:"100%", background:"#fff", borderRadius:20, padding:"22px 20px", marginBottom:8, border:"1.5px solid #f5c5c5", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:16, boxShadow:"0 3px 12px rgba(232,147,138,0.2)" }}>
           <div style={{ width:56, height:56, borderRadius:"50%", background:"linear-gradient(135deg,#fde8e8,#f5c5c5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🪧</div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#2d4a38", marginBottom:4 }}>そっとしておいてカード</div>
             <div style={{ fontSize:12, color:"#8aaa95", lineHeight:1.7 }}>近くにいる人にこの画面を<br/>見せてください</div>
           </div>
+        </button>
+
+        {/* 編集ボタン */}
+        <button onClick={() => setView("edit")}
+          style={{ width:"100%", background:"#fff5f5", borderRadius:12, padding:"10px 16px", marginBottom:12, border:"1px solid #f5c5c5", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:14 }}>✏️</span>
+          <div style={{ fontSize:12, color:"#c96060", fontWeight:600 }}>カードのテキストを編集する</div>
         </button>
       </div>
     </div>
@@ -153,6 +160,29 @@ export default function SOSPage() {
       </button>
     </div>
   );
-
+// ── テキスト編集画面 ──
+  if (view === "edit") return (
+    <div style={{ minHeight:"100vh", background:"#f8f0f0", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
+      <div style={{ background:"#fff", borderRadius:24, padding:"28px 24px", width:"100%", maxWidth:380, boxShadow:"0 8px 40px rgba(0,0,0,0.1)", border:"1px solid #fdd8d8" }}>
+        <div style={{ fontSize:16, fontWeight:800, color:"#2d4a38", marginBottom:8 }}>✏️ カードのテキストを編集</div>
+        <div style={{ fontSize:12, color:"#8aaa95", marginBottom:16, lineHeight:1.8 }}>
+          表示するメッセージを自由に編集できます。<br/>自分の状況に合わせてカスタマイズしてください。
+        </div>
+        <textarea
+          value={aloneText}
+          onChange={e => setAloneText(e.target.value)}
+          style={{ width:"100%", border:"1.5px solid #f5c5c5", borderRadius:12, padding:"12px 14px", fontSize:14, background:"#fff5f5", outline:"none", boxSizing:"border-box", height:160, resize:"none", fontFamily:"inherit", lineHeight:1.9, marginBottom:12 }}
+        />
+        <button onClick={() => setAloneText(DEFAULT_ALONE_TEXT)}
+          style={{ width:"100%", background:"#f8f0f0", color:"#c96060", border:"1px solid #f5c5c5", borderRadius:12, padding:"10px", fontSize:13, cursor:"pointer", marginBottom:8 }}>
+          デフォルトに戻す
+        </button>
+        <button onClick={() => setView("menu")}
+          style={{ width:"100%", background:"linear-gradient(135deg,#e8938a,#c96060)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer" }}>
+          保存して戻る
+        </button>
+      </div>
+    </div>
+  );
   return null;
 }
