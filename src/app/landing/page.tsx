@@ -18,7 +18,26 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN','BIZ UDPGothic',sans-serif" }}>
-
+{/* 固定登録ボタン */}
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:1000, background:"rgba(255,255,255,0.95)", borderTop:"1px solid #c8e6d0", padding:"12px 24px", backdropFilter:"blur(10px)" }}>
+        <div style={{ maxWidth:500, margin:"0 auto", display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:"#2d4a38" }}>🌿 ぱにいき</div>
+            <div style={{ fontSize:11, color:"#8aaa95" }}>ベータ期間中・全機能無料</div>
+          </div>
+          {isLoggedIn ? (
+            <button onClick={() => router.push("/")}
+              style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"12px 24px", fontSize:14, fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>
+              アプリを開く →
+            </button>
+          ) : (
+            <Link href="/auth"
+              style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", borderRadius:12, padding:"12px 24px", fontSize:14, fontWeight:800, textDecoration:"none", whiteSpace:"nowrap" }}>
+              無料で登録 →
+            </Link>
+          )}
+        </div>
+      </div>
       {/* ヘッダー */}
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ color:"#fff", fontSize:22, fontWeight:800 }}>🌿 ぱにいき</div>
