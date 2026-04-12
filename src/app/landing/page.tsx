@@ -180,7 +180,37 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+{/* パニック障害と日常生活 */}
+<div style={{ background:"#fff", padding:"48px 24px" }}>
+  <div style={{ maxWidth:600, margin:"0 auto" }}>
+    <h2 style={{ fontSize:22, fontWeight:800, color:"#2d4a38", marginBottom:8, textAlign:"center" }}>パニック障害と日常生活</h2>
+    <p style={{ fontSize:13, color:"#8aaa95", textAlign:"center", marginBottom:32 }}>当事者が直面する、リアルな日常の困りごと</p>
 
+    {[
+      {
+        title:"外出が怖くなる「広場恐怖」",
+        body:"パニック発作を繰り返すうちに、「また発作が起きたら」という恐怖から、電車・バス・人混みなどの場所を避けるようになることがあります。これを広場恐怖といいます。行動範囲が狭まり、仕事や学校への影響が出ることも少なくありません。"
+      },
+      {
+        title:"発作が起きたときの対処法",
+        body:"発作が起きたと感じたら、まず「これはパニック発作であり、命に関わるものではない」と自分に言い聞かせることが大切です。ゆっくりとした腹式呼吸（息を6秒かけて吐く）を繰り返すことで、自律神経が落ち着いてきます。その場を無理に離れようとせず、安全な場所で静かに待つことも有効です。"
+      },
+      {
+        title:"周囲への説明の難しさ",
+        body:"パニック障害は外見からは分かりにくい病気です。「気のせいでは」「気持ちの問題」と思われてしまうことがあり、理解を得るのに苦労する方も多くいます。ぱにいきの「そっとしておいてカード」は、言葉が出ない状況でも周囲に状態を伝えられるツールです。"
+      },
+      {
+        title:"薬との付き合い方",
+        body:"パニック障害の治療では、抗不安薬や抗うつ薬が処方されることがあります。薬の飲み忘れは症状の安定に影響することがあるため、毎日決まった時間に服薬する習慣が重要です。不安な時だけ飲む頓服薬と、毎日飲む定期薬では管理方法が異なります。"
+      },
+    ].map((item, i) => (
+      <div key={i} style={{ marginBottom:20, background:"#f0f7f2", borderRadius:16, padding:24, border:"1px solid #c8e6d0" }}>
+        <div style={{ fontSize:15, fontWeight:700, color:"#2d4a38", marginBottom:10 }}>🌿 {item.title}</div>
+        <p style={{ fontSize:13, color:"#5a7a65", lineHeight:1.9, margin:0 }}>{item.body}</p>
+      </div>
+    ))}
+  </div>
+</div>
       {/* よくある質問 */}
       <div style={{ background:"#fff", padding:"48px 24px" }}>
         <div style={{ maxWidth:600, margin:"0 auto" }}>
@@ -256,17 +286,24 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* フッター */}
-      <div style={{ background:"#2d4a38", padding:"32px 24px", textAlign:"center" }}>
-        <div style={{ color:"#fff", fontSize:18, fontWeight:800, marginBottom:16 }}>🌿 ぱにいき</div>
-        <div style={{ display:"flex", justifyContent:"center", gap:24, marginBottom:16, flexWrap:"wrap" }}>
-          <Link href="/privacy" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>プライバシーポリシー</Link>
-          <Link href="/terms" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>利用規約</Link>
-          <Link href="/help" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>ヘルプ</Link>
-          <Link href="/auth" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>ログイン</Link>
-        </div>
-        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>© 2026 ぱにいき All rights reserved.</div>
-      </div>
+   {/* フッター */}
+<div style={{ background:"#2d4a38", padding:"32px 24px", textAlign:"center" }}>
+  <div style={{ color:"#fff", fontSize:18, fontWeight:800, marginBottom:16 }}>🌿 ぱにいき</div>
+  <div style={{ display:"flex", justifyContent:"center", gap:24, marginBottom:16, flexWrap:"wrap" }}>
+    <Link href="/privacy" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>プライバシーポリシー</Link>
+    <Link href="/terms" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>利用規約</Link>
+    <Link href="/help" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>ヘルプ</Link>
+    <Link href="/auth" style={{ color:"rgba(255,255,255,0.6)", fontSize:12, textDecoration:"none" }}>ログイン</Link>
+  </div>
+  <div style={{ borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:16, marginBottom:12 }}>
+    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, lineHeight:2.0 }}>
+      運営会社：Joynovation（ジョイノベーション）<br/>
+      所在地：福岡県福岡市<br/>
+      お問い合わせ：<a href="mailto:info@joynovation.com" style={{ color:"rgba(255,255,255,0.5)", textDecoration:"none" }}>info@joynovation.com</a>
+    </div>
+  </div>
+  <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>© 2026 Joynovation. All rights reserved.</div>
+</div>
     </div>
   );
 }
