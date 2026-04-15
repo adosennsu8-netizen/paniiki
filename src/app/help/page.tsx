@@ -49,7 +49,7 @@ export default function HelpPage() {
   <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:8 }}>📩 解決しない場合</div>
   <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.8 }}>
     お問い合わせは下記メールアドレスよりご連絡ください。<br/>
-    <a href="mailto:info@joynovation.com" style={{ color:"#5ba872", fontWeight:700 }}>info@joynovation.com</a>
+    <a href="https://www.joynovation.com" target="_blank" style={{ color:"#5ba872" }}>www.joynovation.com</a>
   </div>
 </div>
 
@@ -57,7 +57,7 @@ export default function HelpPage() {
   <div style={{ fontSize:11, color:"#8aaa95", lineHeight:2.0 }}>
     運営会社：Joynovation（ジョイノベーション）<br/>
     所在地：福岡県福岡市<br/>
-    Webサイト：<a href="https://joynovation.com" target="_blank" style={{ color:"#5ba872" }}>joynovation.com</a>
+    Webサイト：<a href="https://www.joynovation.com" target="_blank" style={{ color:"#5ba872" }}>www.joynovation.com</a>
   </div>
 </div>
       </div>
