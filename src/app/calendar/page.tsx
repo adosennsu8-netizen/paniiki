@@ -11,6 +11,7 @@ const TYPE_CONFIG = {
   hospital:{ label:"クリニック受診",color:"#7bbf8c", bg:"#d4edda", icon:"🏥" },
   good:    { label:"よかったこと",  color:"#4a9060", bg:"#d4edda", icon:"🌟" },
   med:     { label:"薬変更",       color:"#9b7ec8", bg:"#ede7f6", icon:"💊" },
+  other:   { label:"その他",       color:"#7a9ab5", bg:"#e8f0f7", icon:"📌" },
 };
 
 type EventType = keyof typeof TYPE_CONFIG;
