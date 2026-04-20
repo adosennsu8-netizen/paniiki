@@ -126,14 +126,7 @@ export default function FakeCallPage() {
   if (mode === "ringing") return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, fontFamily:"'Roboto','Hiragino Sans',sans-serif", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(160deg,#c0392b 0%,#922b21 30%,#7d3c98 70%,#6c3483 100%)" }}/>
-      <div style={{ position:"relative", zIndex:1, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px 0" }}>
-        <div style={{ color:"#fff", fontSize:14, fontWeight:500 }}>{timeStr}</div>
-        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-          <svg width="16" height="12" viewBox="0 0 16 12" fill="white"><rect x="0" y="4" width="3" height="8" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/></svg>
-          <span style={{ color:"#fff", fontSize:11, fontWeight:500 }}>4G</span>
-          <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="white" strokeOpacity="0.6"/><rect x="2" y="2" width="13" height="8" rx="1.5" fill="white"/></svg>
-        </div>
-      </div>
+      
       <div style={{ position:"relative", zIndex:1, textAlign:"center", paddingTop:70 }}>
         <div style={{ color:"#fff", fontSize:34, fontWeight:300, marginBottom:10, padding:"0 24px" }}>{caller.name}</div>
         <div style={{ color:"rgba(255,255,255,0.65)", fontSize:14, marginBottom:6 }}>{caller.sub}</div>
@@ -190,10 +183,7 @@ export default function FakeCallPage() {
   if (mode === "calling") return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, fontFamily:"'Roboto','Hiragino Sans',sans-serif" }}>
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(160deg,#c0392b 0%,#922b21 30%,#7d3c98 70%,#6c3483 100%)" }}/>
-      <div style={{ position:"relative", zIndex:1, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px 0" }}>
-        <div style={{ color:"#fff", fontSize:14, fontWeight:500 }}>{timeStr}</div>
-        <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="white" strokeOpacity="0.6"/><rect x="2" y="2" width="13" height="8" rx="1.5" fill="white"/></svg>
-      </div>
+     
       <div style={{ position:"relative", zIndex:1, textAlign:"center", paddingTop:70 }}>
         <div style={{ color:"#fff", fontSize:34, fontWeight:300, marginBottom:10, padding:"0 24px" }}>{caller.name}</div>
         <div style={{ color:"#43a047", fontSize:18, fontVariantNumeric:"tabular-nums" }}>{formatTime(elapsed)}</div>
