@@ -91,15 +91,15 @@ export default function QAPage() {
     } finally { setLoading(false); }
   };
 
-  const handleAnswer = async (postId: string) => {
-    const text = answerText[postId]?.trim();
-    if (!text || !uid) return;
-    await addDoc(collection(db, "qaPosts", postId, "answers"), {
-      text, seed, uid, createdAt: serverTimestamp(),
-    });
-    setAnswerText(a => ({ ...a, [postId]: "" }));
-    await loadAnswers(postId);
-  };
+ 94: const handleAnswer = async (postId: string) => {
+95:   const text = answerText[postId]?.trim();
+96:   if (!text || !uid) return;
+97:   await addDoc(collection(db, "qaPosts", postId, "answers"), {
+98:     text, seed, uid, createdAt: serverTimestamp(),
+99:   });
+100:  setAnswerText(a => ({ ...a, [postId]: "" }));
+101:  await loadAnswers(postId);
+102: };
 
   const handlePostSurvey = async () => {
     if (!newSurveyQ.trim()) return;
