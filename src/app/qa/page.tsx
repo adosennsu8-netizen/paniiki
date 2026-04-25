@@ -100,6 +100,11 @@ export default function QAPage() {
 100:  setAnswerText(a => ({ ...a, [postId]: "" }));
 101:  await loadAnswers(postId);
 102: };
+setPosts(prev => prev.map(p =>
+  p.id === postId
+    ? { ...p, answers: (p.answers ?? 0) + 1 }
+    : p
+));
 
   const handlePostSurvey = async () => {
     if (!newSurveyQ.trim()) return;
