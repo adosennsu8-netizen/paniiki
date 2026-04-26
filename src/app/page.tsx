@@ -113,7 +113,21 @@ export default function HomePage() {
           style={{ width:"100%", background:"linear-gradient(135deg,#e8938a,#c96060)", color:"#fff", border:"none", borderRadius:16, padding:"18px", fontSize:18, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(201,96,96,0.35)", marginBottom:12, letterSpacing:"0.05em" }}>
           🆘 発作サポート
         </button>
-
+<button onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: "ぱにいき",
+                text: "パニック障害と生きていく。当事者専用アプリ「ぱにいき」を使ってみてください。",
+                url: "https://paniiki-g1rb.vercel.app/landing",
+              });
+            } else {
+              navigator.clipboard.writeText("https://paniiki-g1rb.vercel.app/landing");
+              alert("URLをコピーしました！");
+            }
+          }}
+          style={{ width:"100%", background:"#fff", color:"#5a7a65", border:"1px solid #c8e6d0", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer", marginBottom:10 }}>
+          🔗 友だちに紹介する
+        </button>
         <button onClick={() => router.push("/help")}
           style={{ width:"100%", background:"#fff", color:"#5a7a65", border:"1px solid #c8e6d0", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer", marginBottom:10 }}>
           ❓ ヘルプ・使い方
