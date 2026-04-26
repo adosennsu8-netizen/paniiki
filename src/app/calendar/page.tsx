@@ -26,33 +26,50 @@ export default function CalendarPage() {
   const [newType, setNewType] = useState<EventType>("attack");
   const [newLabel, setNewLabel] = useState("");
   const [loading, setLoading] = useState(false);
+  const [viewDate, setViewDate] = useState(new Date());
 
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const todayStr = `${monthStr}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const monthNames = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
   const dayNames = ["日","月","火","水","木","金","土"];
+
+  const prevMonth = () => {
+    const d = new Date(viewDate);
+    d.setMonth(d.getMonth() - 1);
+    setViewDate(d);
+  };
+
+  const nextMonth = () => {
+    const d = new Date(viewDate);
+    d.setMonth(d.getMonth() + 1);
+    setViewDate(d);
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
       setSelected(todayStr);
-      await loadEvents(user.uid);
+      await loadEvents(user.uid, monthStr);
     });
     return () => unsub();
   }, []);
 
-  const loadEvents = async (userId: string) => {
+  useEffect(() => {
+    if (uid) loadEvents(uid, monthStr);
+  }, [viewDate]);
+
+  const loadEvents = async (userId: string, ms: string) => {
     const q = query(
       collection(db, "calEvents"),
       where("uid", "==", userId),
-      where("date", ">=", `${monthStr}-01`),
-      where("date", "<=", `${monthStr}-31`)
+      where("date", ">=", `${ms}-01`),
+      where("date", "<=", `${ms}-31`)
     );
     const snap = await getDocs(q);
     const map: Record<string, CalEvent[]> = {};
@@ -76,7 +93,7 @@ export default function CalendarPage() {
         date: selected,
         createdAt: serverTimestamp(),
       });
-      await loadEvents(uid);
+      await loadEvents(uid, monthStr);
       setShowAdd(false);
       setNewLabel("");
     } finally {
@@ -98,8 +115,12 @@ export default function CalendarPage() {
 
       <div style={{ margin:"12px 16px", background:"#fff", borderRadius:16, padding:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+          <button onClick={prevMonth} style={{ background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }}>‹</button>
           <span style={{ fontSize:14, fontWeight:700, color:"#4a9060" }}>{year}年 {monthNames[month]}</span>
-          <button onClick={() => setShowAdd(true)} style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:8, padding:"4px 12px", fontSize:12, cursor:"pointer" }}>＋ 記録</button>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={nextMonth} style={{ background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }}>›</button>
+            <button onClick={() => setShowAdd(true)} style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:8, padding:"4px 12px", fontSize:12, cursor:"pointer" }}>＋ 記録</button>
+          </div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
           {dayNames.map((d, i) => (
