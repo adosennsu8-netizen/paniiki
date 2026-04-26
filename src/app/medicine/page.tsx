@@ -173,16 +173,9 @@ export default function MedicinePage() {
         )}
         <div style={{ background:"#fef3cd", borderRadius:12, padding:"10px 14px", marginTop:8, border:"1px solid #c9963a" }}>
           <div style={{ fontSize:12, color:"#c9963a", lineHeight:1.8 }}>
-            ⚠️ 通知はアプリを開いている間のみ届きます。確実な飲み忘れ防止のために、スマホの標準アラームとの併用をおすすめします。</div>
-          
-        
-      
-            <button onClick={handleEnableNotification}
-              style={{ background:"#5ba872", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", flexShrink:0 }}>
-              有効にする
-            </button>
+            ⚠️ 通知はアプリを開いている間のみ届きます。確実な飲み忘れ防止のために、スマホの標準アラームとの併用をおすすめします。
           </div>
-        )
+        </div>
       </div>
 
       {/* 今日の薬 */}
