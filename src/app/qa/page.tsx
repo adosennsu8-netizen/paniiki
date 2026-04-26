@@ -91,7 +91,7 @@ export default function QAPage() {
     } finally { setLoading(false); }
   };
 
-const handleAnswer = async (postId: string) => {
+ const handleAnswer = async (postId: string) => {
   const text = answerText[postId]?.trim();
   if (!text || !uid) return;
   await addDoc(collection(db, "qaPosts", postId, "answers"), {
@@ -103,13 +103,12 @@ const handleAnswer = async (postId: string) => {
   await updateDoc(postRef, { answers: currentCount + 1 });
   setAnswerText(a => ({ ...a, [postId]: "" }));
   await loadAnswers(postId);
-
+  setPosts(prev => prev.map(p =>
+    p.id === postId
+      ? { ...p, answers: (p.answers ?? 0) + 1 }
+      : p
+  ));
 };
-setPosts(prev => prev.map(p =>
-  p.id === postId
-    ? { ...p, answers: (p.answers ?? 0) + 1 }
-    : p
-));
 
   const handlePostSurvey = async () => {
     if (!newSurveyQ.trim()) return;
