@@ -1,21 +1,34 @@
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
-
-firebase.initializeApp({
-  apiKey: self.FIREBASE_API_KEY,
-  authDomain: self.FIREBASE_AUTH_DOMAIN,
-  projectId: self.FIREBASE_PROJECT_ID,
-  storageBucket: self.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: self.FIREBASE_MESSAGING_SENDER_ID,
-  appId: self.FIREBASE_APP_ID,
+self.addEventListener('push', event => {
+  event.waitUntil(
+    (async () => {
+      const data = event.data ? event.data.json() : {};
+      await self.registration.showNotification(data.title || 'ぱにいき', {
+        body: data.body || '通知があります',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: 'paniiki',
+        renotify: true,
+      });
+      if (navigator.setAppBadge) {
+        const allClients = await clients.matchAll();
+        if (allClients.length === 0) await navigator.setAppBadge(1);
+      }
+    })()
+  );
 });
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: '/icons/icon-192.svg',
-  });
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    (async () => {
+      if (navigator.clearAppBadge) await navigator.clearAppBadge();
+      const clientList = await clients.matchAll({ type: 'window' });
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })()
+  );
 });

@@ -28,6 +28,23 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      // Push通知の購読
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          });
+          const { updateDoc, doc } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase');
+          await updateDoc(doc(db, 'users', user.uid), {
+            pushSubscription: JSON.parse(JSON.stringify(sub))
+          });
+        } catch (e) {
+          console.log('Push subscription failed:', e);
+        }
+      }
       setChecking(false);
     });
     return () => unsub();
