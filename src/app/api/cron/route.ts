@@ -9,7 +9,11 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!,
 );
 
-if (!getApps().length) {
+
+
+export async function GET() {
+  try {
+    if (!getApps().length) {
   initializeApp({
     credential: cert({
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -18,9 +22,6 @@ if (!getApps().length) {
     }),
   });
 }
-
-export async function GET() {
-  try {
     const db = getFirestore();
     const now = new Date();
     const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
