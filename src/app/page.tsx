@@ -29,11 +29,16 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      // 変更後
       setChecking(false);
-      const noticesSnap = await getDocs(query(collection(db, "notices"), orderBy("createdAt", "desc")));
-const readNotices: string[] = data?.readNotices || [];
-const unread = noticesSnap.docs.filter(d => !readNotices.includes(d.id)).length;
-setUnreadCount(unread);
+      try {
+        const noticesSnap = await getDocs(query(collection(db, "notices"), orderBy("createdAt", "desc")));
+        const readNotices: string[] = data?.readNotices || [];
+        const unread = noticesSnap.docs.filter(d => !readNotices.includes(d.id)).length;
+        setUnreadCount(unread);
+      } catch (e) {
+        console.log("notices fetch failed:", e);
+      }
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
