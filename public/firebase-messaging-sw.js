@@ -1,5 +1,5 @@
 // キャッシュバージョン更新で強制リロード
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
