@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
-webpush.setVapidDetails(
-  'mailto:info@joynovation.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
-
 export async function POST(req: NextRequest) {
   try {
+    webpush.setVapidDetails(
+      'mailto:info@joynovation.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!,
+    );
+
     const { subscription, title, body } = await req.json();
     if (!subscription) return NextResponse.json({ ok: true, skipped: true });
 
