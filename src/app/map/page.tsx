@@ -155,10 +155,17 @@ export default function MapPage() {
           <rect x="8%" y="65%" width="20%" height="22%" fill="#c8ddd0" rx="3" opacity="0.6"/>
           <rect x="68%" y="65%" width="22%" height="20%" fill="#c8ddd0" rx="3" opacity="0.6"/>
         </svg>
-        <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:10 }}>
-          <div style={{ width:20, height:20, background:"#5ba872", borderRadius:"50%", border:"3px solid white", boxShadow:"0 2px 8px rgba(0,0,0,0.3)" }}/>
-          <div style={{ position:"absolute", top:-4, left:-4, width:28, height:28, border:"2px solid #5ba872", borderRadius:"50%", opacity:0.4, animation:"pulse 2s infinite" }}/>
-        </div>
+        <div
+  onClick={() => setShowBubble(showBubble === "me" ? null : "me")}
+  style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:10, cursor: myComment ? "pointer" : "default" }}>
+  <div style={{ width:20, height:20, background:"#5ba872", borderRadius:"50%", border:"3px solid white", boxShadow:"0 2px 8px rgba(0,0,0,0.3)" }}/>
+  <div style={{ position:"absolute", top:-4, left:-4, width:28, height:28, border:"2px solid #5ba872", borderRadius:"50%", opacity:0.4, animation:"pulse 2s infinite" }}/>
+  {showBubble === "me" && myComment && (
+    <div style={{ position:"absolute", bottom:26, left:-60, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140, whiteSpace:"nowrap" }}>
+      🟢 あなた：{myComment}
+    </div>
+  )}
+</div>
         {nearbyUsers.map(u => (
           <div key={u.id} onClick={() => setShowBubble(showBubble === u.id ? null : u.id)}
             style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, cursor:"pointer", zIndex:5 }}>
