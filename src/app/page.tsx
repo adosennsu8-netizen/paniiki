@@ -90,14 +90,16 @@ export default function HomePage() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>}
-          <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)" }}>
-            {icon}
+          <div onClick={() => router.push("/profile-edit")}
+  style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer" }}>
+  {icon}
           </div>
         </div>
       </div>
 
       <div style={{ padding:"16px 16px 100px" }}>
-        <div style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
+        <div onClick={() => router.push("/profile-edit")}
+  style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, cursor:"pointer", boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
           <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{icon}</div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#2d4a38" }}>{nickname}</div>
