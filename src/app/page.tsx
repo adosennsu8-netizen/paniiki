@@ -28,6 +28,7 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      setChecking(false);
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
@@ -45,7 +46,6 @@ export default function HomePage() {
           console.log('Push subscription failed:', e);
         }
       }
-      setChecking(false);
     });
     return () => unsub();
   }, [router]);
