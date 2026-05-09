@@ -29,11 +29,11 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      setChecking(false);
       const noticesSnap = await getDocs(query(collection(db, "notices"), orderBy("createdAt", "desc")));
 const readNotices: string[] = data?.readNotices || [];
 const unread = noticesSnap.docs.filter(d => !readNotices.includes(d.id)).length;
 setUnreadCount(unread);
-      setChecking(false);
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
