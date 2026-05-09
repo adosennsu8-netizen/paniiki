@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
 export default function HomePage() {
@@ -15,6 +15,7 @@ export default function HomePage() {
   const [uid, setUid] = useState("");
   const [nickname, setNickname] = useState("");
   const [icon, setIcon] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -28,6 +29,10 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      const noticesSnap = await getDocs(query(collection(db, "notices"), orderBy("createdAt", "desc")));
+const readNotices: string[] = data?.readNotices || [];
+const unread = noticesSnap.docs.filter(d => !readNotices.includes(d.id)).length;
+setUnreadCount(unread);
       setChecking(false);
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -89,12 +94,20 @@ export default function HomePage() {
           <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9, letterSpacing:"0.15em" }}>パニック障害と生きていく</div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>}
-          <div onClick={() => router.push("/profile-edit")}
-  style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer" }}>
-  {icon}
-          </div>
-        </div>
+  {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>}
+  <div onClick={() => router.push("/notices")} style={{ position:"relative", cursor:"pointer" }}>
+    <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🔔</div>
+    {unreadCount > 0 && (
+      <div style={{ position:"absolute", top:-4, right:-4, background:"#e07070", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {unreadCount}
+      </div>
+    )}
+  </div>
+  <div onClick={() => router.push("/profile-edit")}
+    style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer" }}>
+    {icon}
+  </div>
+</div>
       </div>
 
       <div style={{ padding:"16px 16px 100px" }}>
