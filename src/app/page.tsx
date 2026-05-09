@@ -15,6 +15,7 @@ export default function HomePage() {
   const [uid, setUid] = useState("");
   const [nickname, setNickname] = useState("");
   const [icon, setIcon] = useState("");
+  const [imgSrc, setImgSrc] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function HomePage() {
       setUid(user.uid);
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
+      setImgSrc(data?.imgSrc || "");
       // 変更後
       setChecking(false);
       try {
@@ -108,17 +110,23 @@ export default function HomePage() {
       </div>
     )}
   </div>
-  <div onClick={() => router.push("/profile-edit")}
-    style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer" }}>
-    {icon}
-  </div>
+<div onClick={() => router.push("/profile-edit")}
+  style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer", overflow:"hidden" }}>
+  {imgSrc
+    ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+    : icon}
+</div>
 </div>
       </div>
 
       <div style={{ padding:"16px 16px 100px" }}>
         <div onClick={() => router.push("/profile-edit")}
   style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, cursor:"pointer", boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{icon}</div>
+         <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, overflow:"hidden" }}>
+  {imgSrc
+    ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+    : icon}
+</div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#2d4a38" }}>{nickname}</div>
             <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>{isPremium ? "⭐ プレミアム会員" : "🆓 無料プラン"}</div>
