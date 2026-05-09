@@ -3,7 +3,7 @@ useEffect(() => {
     if (!user) { router.push("/auth"); return; }
     setUid(user.uid);
     try {
-      const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+      const q = query(collection(db, "notices"));
       const snap = await getDocs(q);
       const items: Notice[] = snap.docs.map(d => ({
         id: d.id,
