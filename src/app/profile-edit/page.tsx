@@ -32,15 +32,27 @@ export default function ProfileEditPage() {
   }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setImgSrc(ev.target?.result as string);
-      setIcon("");
-    };
-    reader.readAsDataURL(file);
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    const MAX = 200;
+    let w = img.width;
+    let h = img.height;
+    if (w > h) { h = (h / w) * MAX; w = MAX; }
+    else { w = (w / h) * MAX; h = MAX; }
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+    const compressed = canvas.toDataURL("image/jpeg", 0.7);
+    setImgSrc(compressed);
+    setIcon("");
+    URL.revokeObjectURL(url);
   };
+  img.src = url;
+};
 
   const handleSave = async () => {
     if (!nickname.trim()) { setError("ニックネームを入力してください"); return; }
