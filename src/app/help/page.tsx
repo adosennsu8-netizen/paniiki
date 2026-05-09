@@ -29,7 +29,12 @@ export default function HelpPage() {
             各機能の使い方を説明します。知りたい機能をタップしてください。
           </div>
         </div>
-
+      <div style={{ background:"#fff8e1", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #ffe082" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#b07800", marginBottom:4 }}>⚠️ アプリが開かない場合</div>
+          <div style={{ fontSize:12, color:"#7a5800", lineHeight:1.8 }}>
+            ブラウザの「サイトの設定」→「データを削除」を行ってから再度アクセスしてください。それでも解決しない場合は、シークレットモード（プライベートブラウジング）でお試しください。
+          </div>
+        </div>
         {HELP_ITEMS.map(item => (
           <Link key={item.path} href={item.path} style={{ textDecoration:"none" }}>
             <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:14 }}>
