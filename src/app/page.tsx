@@ -138,6 +138,7 @@ export default function HomePage() {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
           {[
             { icon:"🗺", label:"近くの仲間", desc:"300m以内の仲間", path:"/map" },
+            { icon:"💬", label:"広場", desc:"みんなとチャット", path:"/plaza" },
             { icon:"📅", label:"カレンダー", desc:"発作・受診を記録", path:"/calendar" },
             { icon:"💊", label:"薬の管理", desc:"飲み忘れ防止・記録", path:"/medicine" },
             { icon:"📋", label:"薬一覧", desc:"処方薬の情報", path:"/meds" },
