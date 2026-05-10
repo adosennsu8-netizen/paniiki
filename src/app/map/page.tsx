@@ -166,17 +166,17 @@ export default function MapPage() {
     </div>
   )}
 </div>
-        {nearbyUsers.map(u => (
-          <div key={u.id} onClick={() => setShowBubble(showBubble === u.id ? null : u.id)}
-            style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, cursor:"pointer", zIndex:5 }}>
-            <div style={{ width:16, height:16, background:"#e07070", borderRadius:"50%", border:"2px solid white", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }}/>
-            {showBubble === u.id && u.comment && (
-              <div style={{ position:"absolute", bottom:22, left:-48, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140 }}>
-                <span style={{ marginRight:4 }}>{ANON_EMOJI[u.seed]}</span>{u.comment}
-              </div>
-            )}
-          </div>
-        ))}
+      {nearbyUsers.map(u => (
+  <div key={u.id}
+    style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, zIndex:5 }}>
+    <div style={{ width:16, height:16, background:"#e07070", borderRadius:"50%", border:"2px solid white", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }}/>
+    {u.comment && (
+      <div style={{ position:"absolute", bottom:22, left:-48, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140 }}>
+        <span style={{ marginRight:4 }}>{ANON_EMOJI[u.seed]}</span>{u.comment}
+      </div>
+    )}
+  </div>
+))}  
         <div style={{ position:"absolute", top:10, left:10, background:"rgba(255,255,255,0.92)", borderRadius:8, padding:"4px 10px", fontSize:11, color:"#2d4a38" }}>
           📍 300m以内に <strong>{nearbyUsers.length}人</strong> の仲間
         </div>
