@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase"; // ← プロジェクトのfirebase初期化パスに合わせて
-import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   query,
@@ -21,58 +21,51 @@ type Conversation = {
   otherImgSrc?: string;
   lastMessage: string;
   lastMessageAt: Timestamp | null;
-  unreadCount: number; // 自分の未読数
+  unreadCount: number;
 };
 
 export default function DMListPage() {
-  const [user] = useAuthState(auth);
   const router = useRouter();
+  const [uid, setUid] = useState<string | null>(null);
   const [convs, setConvs] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) { router.push("/auth"); return; }
+      setUid(user.uid);
+    });
+    return () => unsub();
+  }, [router]);
 
+  useEffect(() => {
+    if (!uid) return;
     const q = query(
       collection(db, "dmConversations"),
-      where("participants", "array-contains", user.uid),
+      where("participants", "array-contains", uid),
       orderBy("lastMessageAt", "desc")
     );
-
-    const unsub = onSnapshot(q, async (snap) => {
-      const list: Conversation[] = [];
-
-      for (const docSnap of snap.docs) {
+    const unsub = onSnapshot(q, (snap) => {
+      const list: Conversation[] = snap.docs.map((docSnap) => {
         const data = docSnap.data();
-        const otherUid = (data.participants as string[]).find(
-          (uid) => uid !== user.uid
-        )!;
-
-        // 相手のユーザー情報はdmConversationsに非正規化して保存する設計
-        const otherNickname =
-          data[`nickname_${otherUid}`] ?? "ユーザー";
-        const otherIcon = data[`icon_${otherUid}`] ?? "🐾";
-        const otherImgSrc = data[`imgSrc_${otherUid}`] ?? undefined;
-
-        list.push({
+        const otherUid = (data.participants as string[]).find((u) => u !== uid)!;
+        return {
           id: docSnap.id,
           participants: data.participants,
           otherUid,
-          otherNickname,
-          otherIcon,
-          otherImgSrc,
+          otherNickname: data[`nickname_${otherUid}`] ?? "ユーザー",
+          otherIcon: data[`icon_${otherUid}`] ?? "🐾",
+          otherImgSrc: data[`imgSrc_${otherUid}`] ?? undefined,
           lastMessage: data.lastMessage ?? "",
           lastMessageAt: data.lastMessageAt ?? null,
-          unreadCount: data[`unread_${user.uid}`] ?? 0,
-        });
-      }
-
+          unreadCount: data[`unread_${uid}`] ?? 0,
+        };
+      });
       setConvs(list);
       setLoading(false);
     });
-
     return () => unsub();
-  }, [user]);
+  }, [uid]);
 
   const formatTime = (ts: Timestamp | null) => {
     if (!ts) return "";
@@ -83,10 +76,7 @@ export default function DMListPage() {
       d.getMonth() === now.getMonth() &&
       d.getDate() === now.getDate();
     if (isToday) {
-      return d.toLocaleTimeString("ja-JP", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
     }
     return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
   };
@@ -94,99 +84,66 @@ export default function DMListPage() {
   const totalUnread = convs.reduce((sum, c) => sum + c.unreadCount, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-      {/* ヘッダー */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-purple-100 px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="text-purple-400 hover:text-purple-600 transition"
-        >
-          ←
-        </button>
-        <h1 className="text-lg font-bold text-purple-700 flex items-center gap-2">
-          <span>💬</span> DM
+    <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
+      <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 20px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 12px rgba(91,168,114,0.25)" }}>
+        <button onClick={() => router.back()} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer" }}>← 戻る</button>
+        <div style={{ color:"#fff", fontSize:18, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}>
+          💬 DM
           {totalUnread > 0 && (
-            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
+            <span style={{ background:"#e07070", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
               {totalUnread}
             </span>
           )}
-        </h1>
+        </div>
       </div>
 
-      {/* 会話リスト */}
-      <div className="max-w-lg mx-auto">
-        {loading ? (
-          <div className="flex justify-center py-20 text-purple-300">
-            読み込み中…
-          </div>
-        ) : convs.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <div className="text-5xl mb-4">💬</div>
-            <p className="text-sm">まだDMはありません</p>
-            <p className="text-xs mt-1 text-gray-300">
-              広場でプロフィールをタップしてDMを送れます
-            </p>
-          </div>
-        ) : (
-          <ul>
-            {convs.map((conv) => (
-              <li key={conv.id}>
-                <button
-                  onClick={() => router.push(`/dm/${conv.id}`)}
-                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-purple-50 active:bg-purple-100 transition border-b border-purple-50"
-                >
-                  {/* アバター */}
-                  <div className="relative flex-shrink-0">
-                    {conv.otherImgSrc ? (
-                      <img
-                        src={conv.otherImgSrc}
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-2xl">
-                        {conv.otherIcon}
-                      </div>
-                    )}
-                    {conv.unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                        {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* テキスト */}
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex justify-between items-baseline">
-                      <span
-                        className={`font-semibold text-sm truncate ${
-                          conv.unreadCount > 0
-                            ? "text-purple-800"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {conv.otherNickname}
-                      </span>
-                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
-                        {formatTime(conv.lastMessageAt)}
-                      </span>
+      {loading ? (
+        <div style={{ display:"flex", justifyContent:"center", paddingTop:80, color:"#8aaa95" }}>読み込み中…</div>
+      ) : convs.length === 0 ? (
+        <div style={{ textAlign:"center", paddingTop:80, color:"#8aaa95" }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>💬</div>
+          <div style={{ fontSize:14 }}>まだDMはありません</div>
+          <div style={{ fontSize:12, marginTop:4, color:"#b0c4b8" }}>広場でプロフィールをタップしてDMを送れます</div>
+        </div>
+      ) : (
+        <ul style={{ listStyle:"none", margin:0, padding:0 }}>
+          {convs.map((conv) => (
+            <li key={conv.id}>
+              <button
+                onClick={() => router.push(`/dm/${conv.id}`)}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"16px", background:"#fff", border:"none", borderBottom:"1px solid #e8f5ec", cursor:"pointer", textAlign:"left" }}>
+                <div style={{ position:"relative", flexShrink:0 }}>
+                  {conv.otherImgSrc ? (
+                    <img src={conv.otherImgSrc} alt="" style={{ width:48, height:48, borderRadius:"50%", objectFit:"cover" }} />
+                  ) : (
+                    <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                      {conv.otherIcon}
                     </div>
-                    <p
-                      className={`text-xs mt-0.5 truncate ${
-                        conv.unreadCount > 0
-                          ? "text-purple-600 font-medium"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {conv.lastMessage || "まだメッセージはありません"}
-                    </p>
+                  )}
+                  {conv.unreadCount > 0 && (
+                    <div style={{ position:"absolute", top:-4, right:-4, background:"#e07070", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
+                    <span style={{ fontWeight:700, fontSize:14, color: conv.unreadCount > 0 ? "#2d4a38" : "#5a7a65" }}>
+                      {conv.otherNickname}
+                    </span>
+                    <span style={{ fontSize:11, color:"#8aaa95", marginLeft:8, flexShrink:0 }}>
+                      {formatTime(conv.lastMessageAt)}
+                    </span>
                   </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  <div style={{ fontSize:12, marginTop:2, color: conv.unreadCount > 0 ? "#3d7a55" : "#8aaa95", fontWeight: conv.unreadCount > 0 ? 600 : 400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {conv.lastMessage || "まだメッセージはありません"}
+                  </div>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
