@@ -159,18 +159,18 @@ export default function MapPage() {
 <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:10 }}>
   <div style={{ width:20, height:20, background:"#5ba872", borderRadius:"50%", border:"3px solid white", boxShadow:"0 2px 8px rgba(0,0,0,0.3)" }}/>
   <div style={{ position:"absolute", top:-4, left:-4, width:28, height:28, border:"2px solid #5ba872", borderRadius:"50%", opacity:0.4, animation:"pulse 2s infinite" }}/>
-  {myComment && (
-    <div style={{ position:"absolute", bottom:26, left:-60, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140, whiteSpace:"nowrap" }}>
-      🟢 あなた：{myComment}
-    </div>
-  )}
+ {myComment && (
+  <div style={{ position:"absolute", bottom:26, left:-60, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140, whiteSpace:"normal", wordBreak:"break-all" }}>
+    🟢 あなた：{myComment}
+  </div>
+)}
 </div>
     {nearbyUsers.map(u => (
   <div key={u.id} onClick={() => setShowBubble(showBubble === u.id ? null : u.id)}
     style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, zIndex:showBubble === u.id ? 20 : 5, cursor:"pointer" }}>
     <div style={{ width:16, height:16, background:"#e07070", borderRadius:"50%", border:"2px solid white", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }}/>
     {u.comment && (
-      <div style={{ position:"absolute", bottom:22, left:-48, background: showBubble === u.id ? "#d4edda" : "#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:`1px solid ${showBubble === u.id ? "#5ba872" : "#c8e6d0"}`, width:140 }}>
+      <div style={{ position:"absolute", bottom:22, left:-48, background: showBubble === u.id ? "#d4edda" : "#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:`1px solid ${showBubble === u.id ? "#5ba872" : "#c8e6d0"}`, width:140, whiteSpace:"normal", wordBreak:"break-all" }}>
         <span style={{ marginRight:4 }}>{ANON_EMOJI[u.seed]}</span>{u.comment}
       </div>
     )}
