@@ -31,7 +31,7 @@ export default function HomePage() {
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
       setImgSrc(data?.imgSrc || "");
-      console.log("imgSrc length:", (data?.imgSrc || "").length);
+      
       // 変更後
       setChecking(false);
       try {
