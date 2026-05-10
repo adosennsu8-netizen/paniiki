@@ -106,11 +106,13 @@ export default function PlazaPage() {
           const isMe = m.uid === uid;
           return (
             <div key={m.id} style={{ display:"flex", flexDirection:isMe?"row-reverse":"row", alignItems:"flex-end", gap:8, marginBottom:12 }}>
-              <div style={{ width:32, height:32, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, overflow:"hidden" }}>
-                {m.imgSrc
-                  ? <img src={m.imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-                  : m.icon}
-              </div>
+             <div
+  onClick={() => m.isPublic && router.push(`/user/${m.uid}`)}
+  style={{ width:32, height:32, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, overflow:"hidden", cursor: m.isPublic ? "pointer" : "default" }}>
+  {m.imgSrc
+    ? <img src={m.imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+    : m.icon}
+</div>
               <div style={{ maxWidth:"70%" }}>
                 {!isMe && (
                   <div style={{ fontSize:11, color:"#8aaa95", marginBottom:3, paddingLeft:4 }}>{m.nickname}</div>
