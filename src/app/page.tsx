@@ -146,6 +146,7 @@ export default function HomePage() {
 
         <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:10 }}>メニュー</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+         // 変更後
           {[
             { icon:"🗺", label:"近くの仲間", desc:"300m以内の仲間", path:"/map" },
             { icon:"💬", label:"広場", desc:"みんなとチャット", path:"/plaza" },
@@ -158,7 +159,10 @@ export default function HomePage() {
             { icon:"📵", label:"偽電話", desc:"その場を離れる", path:"/fake-call" },
           ].map(item => (
             <button key={item.path} onClick={() => router.push(item.path)}
-              style={{ background:"#fff", border:"1px solid #c8e6d0", borderRadius:16, padding:"16px 12px", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
+              style={{ background:"#fff", border:"1px solid #c8e6d0", borderRadius:16, padding:"16px 12px", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px rgba(0,0,0,0.05)", position:"relative" }}>
+              {item.path === "/plaza" && unreadPlaza && (
+                <div style={{ position:"absolute", top:10, right:10, width:10, height:10, background:"#e07070", borderRadius:"50%" }}/>
+              )}
               <div style={{ fontSize:28, marginBottom:6 }}>{item.icon}</div>
               <div style={{ fontSize:14, fontWeight:700, color:"#2d4a38", marginBottom:2 }}>{item.label}</div>
               <div style={{ fontSize:11, color:"#8aaa95" }}>{item.desc}</div>
