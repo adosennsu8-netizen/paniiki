@@ -146,7 +146,6 @@ export default function HomePage() {
 
         <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:10 }}>メニュー</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-         // 変更後
           {[
             { icon:"🗺", label:"近くの仲間", desc:"300m以内の仲間", path:"/map" },
             { icon:"💬", label:"広場", desc:"みんなとチャット", path:"/plaza" },
