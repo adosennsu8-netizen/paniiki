@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
   const [icon, setIcon] = useState("");
   const [imgSrc, setImgSrc] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
-
+ const [unreadPlaza, setUnreadPlaza] = useState(false);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/landing"); return; }
@@ -41,6 +41,16 @@ export default function HomePage() {
         setUnreadCount(unread);
       } catch (e) {
         console.log("notices fetch failed:", e);
+      }
+      try {
+        const lastSeen = data?.lastSeenPlaza?.toDate() || new Date(0);
+        const msgsSnap = await getDocs(query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(1)));
+        if (!msgsSnap.empty) {
+          const latest = msgsSnap.docs[0].data().createdAt?.toDate();
+          if (latest && latest > lastSeen) setUnreadPlaza(true);
+        }
+      } catch (e) {
+        console.log("plaza unread check failed:", e);
       }
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
