@@ -2,11 +2,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  doc, getDoc,
+  collection, getDocs, query, orderBy, limit, where,
+  onSnapshot,
+} from "firebase/firestore";
 
 export default function HomePage() {
+  const [dmUnread, setDmUnread] = useState(0);
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
@@ -17,7 +21,8 @@ export default function HomePage() {
   const [icon, setIcon] = useState("");
   const [imgSrc, setImgSrc] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
- const [unreadPlaza, setUnreadPlaza] = useState(false);
+  const [unreadPlaza, setUnreadPlaza] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/landing"); return; }
@@ -31,9 +36,8 @@ export default function HomePage() {
       setNickname(data?.nickname || "");
       setIcon(data?.icon || "🍀");
       setImgSrc(data?.imgSrc || "");
-      
-      // 変更後
       setChecking(false);
+
       try {
         const noticesSnap = await getDocs(query(collection(db, "notices"), orderBy("createdAt", "desc")));
         const readNotices: string[] = data?.readNotices || [];
@@ -42,6 +46,7 @@ export default function HomePage() {
       } catch (e) {
         console.log("notices fetch failed:", e);
       }
+
       try {
         const lastSeen = data?.lastSeenPlaza?.toDate() || new Date(0);
         const msgsSnap = await getDocs(query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(1)));
@@ -52,6 +57,21 @@ export default function HomePage() {
       } catch (e) {
         console.log("plaza unread check failed:", e);
       }
+
+      // DM未読カウント監視
+      const dmQ = query(
+        collection(db, "dmConversations"),
+        where("participants", "array-contains", user.uid)
+      );
+      const dmUnsub = onSnapshot(dmQ, (dmSnap) => {
+        let total = 0;
+        dmSnap.docs.forEach((d) => {
+          total += d.data()[`unread_${user.uid}`] ?? 0;
+        });
+        setDmUnread(total);
+      });
+      // ※ onAuthStateChanged の unsub と別管理になるが実用上問題なし
+
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
@@ -60,9 +80,9 @@ export default function HomePage() {
             userVisibleOnly: true,
             applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
           });
-          const { updateDoc, doc } = await import('firebase/firestore');
-          const { db } = await import('@/lib/firebase');
-          await updateDoc(doc(db, 'users', user.uid), {
+          const { updateDoc, doc: firestoreDoc } = await import('firebase/firestore');
+          const { db: firestoreDb } = await import('@/lib/firebase');
+          await updateDoc(firestoreDoc(firestoreDb, 'users', user.uid), {
             pushSubscription: JSON.parse(JSON.stringify(sub))
           });
         } catch (e) {
@@ -112,32 +132,41 @@ export default function HomePage() {
           <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9, letterSpacing:"0.15em" }}>パニック障害と生きていく</div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-  {isPremium && <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>}
-  <div onClick={() => router.push("/notices")} style={{ position:"relative", cursor:"pointer" }}>
-    <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🔔</div>
-    {unreadCount > 0 && (
-      <div style={{ position:"absolute", top:-4, right:-4, background:"#e07070", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {unreadCount}
-      </div>
-    )}
-  </div>
-<div onClick={() => router.push("/profile-edit")}
-  style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer", overflow:"hidden" }}>
-  {imgSrc
-    ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-    : icon}
-</div>
-</div>
+          {isPremium && (
+            <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>
+          )}
+
+          {/* 🔔→💬 DMアイコンに変更 */}
+          <div onClick={() => router.push("/dm")} style={{ position:"relative", cursor:"pointer" }}>
+            <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            {dmUnread > 0 && (
+              <div style={{ position:"absolute", top:-4, right:-4, background:"#e07070", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {dmUnread > 9 ? "9+" : dmUnread}
+              </div>
+            )}
+          </div>
+
+          <div onClick={() => router.push("/profile-edit")}
+            style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer", overflow:"hidden" }}>
+            {imgSrc
+              ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : icon}
+          </div>
+        </div>
       </div>
 
       <div style={{ padding:"16px 16px 100px" }}>
         <div onClick={() => router.push("/profile-edit")}
-  style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, cursor:"pointer", boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
-         <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, overflow:"hidden" }}>
-  {imgSrc
-    ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-    : icon}
-</div>
+          style={{ background:"#fff", borderRadius:16, padding:16, marginBottom:12, cursor:"pointer", boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:48, height:48, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, overflow:"hidden" }}>
+            {imgSrc
+              ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : icon}
+          </div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:"#2d4a38" }}>{nickname}</div>
             <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>{isPremium ? "⭐ プレミアム会員" : "🆓 無料プラン"}</div>
@@ -173,21 +202,23 @@ export default function HomePage() {
           style={{ width:"100%", background:"linear-gradient(135deg,#e8938a,#c96060)", color:"#fff", border:"none", borderRadius:16, padding:"18px", fontSize:18, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(201,96,96,0.35)", marginBottom:12, letterSpacing:"0.05em" }}>
           🆘 発作サポート
         </button>
-<button onClick={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: "ぱにいき",
-                text: "パニック障害と生きていく。当事者専用アプリ「ぱにいき」を使ってみてください。",
-                url: "https://paniiki-g1rb.vercel.app/landing",
-              });
-            } else {
-              navigator.clipboard.writeText("https://paniiki-g1rb.vercel.app/landing");
-              alert("URLをコピーしました！");
-            }
-          }}
+
+        <button onClick={() => {
+          if (navigator.share) {
+            navigator.share({
+              title: "ぱにいき",
+              text: "パニック障害と生きていく。当事者専用アプリ「ぱにいき」を使ってみてください。",
+              url: "https://paniiki-g1rb.vercel.app/landing",
+            });
+          } else {
+            navigator.clipboard.writeText("https://paniiki-g1rb.vercel.app/landing");
+            alert("URLをコピーしました！");
+          }
+        }}
           style={{ width:"100%", background:"#fff", color:"#5a7a65", border:"1px solid #c8e6d0", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer", marginBottom:10 }}>
           🔗 友だちに紹介する
         </button>
+
         <button onClick={() => router.push("/help")}
           style={{ width:"100%", background:"#fff", color:"#5a7a65", border:"1px solid #c8e6d0", borderRadius:12, padding:"11px", fontSize:13, cursor:"pointer", marginBottom:10 }}>
           ❓ ヘルプ・使い方

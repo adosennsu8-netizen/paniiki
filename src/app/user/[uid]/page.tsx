@@ -4,20 +4,36 @@ import { useRouter, useParams } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { createOrGetConversation } from "@/lib/dm";
 
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams();
   const targetUid = params.uid as string;
+
+  const [currentUid, setCurrentUid] = useState("");
+  const [myProfile, setMyProfile] = useState<{ nickname: string; icon: string; imgSrc?: string } | null>(null);
+
   const [nickname, setNickname] = useState("");
   const [icon, setIcon] = useState("");
   const [imgSrc, setImgSrc] = useState("");
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dmLoading, setDmLoading] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/auth"); return; }
+      setCurrentUid(user.uid);
+
+      // 自分のプロフィール取得（DM送信に必要）
+      const mySnap = await getDoc(doc(db, "users", user.uid));
+      if (mySnap.exists()) {
+        const d = mySnap.data();
+        setMyProfile({ nickname: d.nickname, icon: d.icon, imgSrc: d.imgSrc });
+      }
+
+      // 相手のプロフィール取得
       try {
         const snap = await getDoc(doc(db, "users", targetUid));
         const data = snap.data();
@@ -33,6 +49,22 @@ export default function UserProfilePage() {
     });
     return () => unsub();
   }, [targetUid]);
+
+  const handleDM = async () => {
+    if (!currentUid || !myProfile || dmLoading) return;
+    setDmLoading(true);
+    try {
+      const convId = await createOrGetConversation(
+        { uid: currentUid, ...myProfile },
+        { uid: targetUid, nickname, icon, imgSrc: imgSrc || undefined }
+      );
+      router.push(`/dm/${convId}`);
+    } catch (e) {
+      console.error("DM作成失敗:", e);
+    } finally {
+      setDmLoading(false);
+    }
+  };
 
   if (loading) return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -65,12 +97,27 @@ export default function UserProfilePage() {
           )}
         </div>
 
-        {/* 将来のDMボタン用スペース */}
-        <button
-          disabled
-          style={{ width:"100%", background:"#e8f5ec", color:"#8aaa95", border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:700, cursor:"not-allowed" }}>
-          💬 DM機能は近日公開予定
-        </button>
+        {/* 自分以外にのみDMボタンを表示 */}
+        {currentUid && currentUid !== targetUid && (
+          <button
+            onClick={handleDM}
+            disabled={dmLoading}
+            style={{
+              width:"100%",
+              background: dmLoading ? "#c8e6d0" : "linear-gradient(135deg,#5ba872,#7bbf8c)",
+              color:"#fff",
+              border:"none",
+              borderRadius:12,
+              padding:"14px",
+              fontSize:15,
+              fontWeight:700,
+              cursor: dmLoading ? "not-allowed" : "pointer",
+              boxShadow:"0 4px 16px rgba(91,168,114,0.3)",
+              transition:"opacity 0.2s",
+            }}>
+            {dmLoading ? "移動中…" : "💬 DM を送る"}
+          </button>
+        )}
       </div>
     </div>
   );
