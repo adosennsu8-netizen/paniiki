@@ -165,12 +165,12 @@ export default function MapPage() {
     </div>
   )}
 </div>
-      {nearbyUsers.map(u => (
-  <div key={u.id}
-    style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, zIndex:5 }}>
+    {nearbyUsers.map(u => (
+  <div key={u.id} onClick={() => setShowBubble(showBubble === u.id ? null : u.id)}
+    style={{ position:"absolute", top:`${u.y}%`, left:`${u.x}%`, zIndex:showBubble === u.id ? 20 : 5, cursor:"pointer" }}>
     <div style={{ width:16, height:16, background:"#e07070", borderRadius:"50%", border:"2px solid white", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }}/>
     {u.comment && (
-      <div style={{ position:"absolute", bottom:22, left:-48, background:"#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:"1px solid #c8e6d0", width:140 }}>
+      <div style={{ position:"absolute", bottom:22, left:-48, background: showBubble === u.id ? "#d4edda" : "#fff", borderRadius:10, padding:"6px 10px", fontSize:11, color:"#2d4a38", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", border:`1px solid ${showBubble === u.id ? "#5ba872" : "#c8e6d0"}`, width:140 }}>
         <span style={{ marginRight:4 }}>{ANON_EMOJI[u.seed]}</span>{u.comment}
       </div>
     )}
