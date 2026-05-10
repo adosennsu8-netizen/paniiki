@@ -13,6 +13,7 @@ export default function ProfileEditPage() {
   const [icon, setIcon] = useState("");
   const [imgSrc, setImgSrc] = useState("");
   const [bio, setBio] = useState("");
+  const [plazaPublic, setPlazaPublic] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -27,32 +28,33 @@ export default function ProfileEditPage() {
       setIcon(data?.icon || "");
       setImgSrc(data?.imgSrc || "");
       setBio(data?.bio || "");
+      setPlazaPublic(data?.plazaPublic || false);
     });
     return () => unsub();
   }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    const MAX = 200;
-    let w = img.width;
-    let h = img.height;
-    if (w > h) { h = (h / w) * MAX; w = MAX; }
-    else { w = (w / h) * MAX; h = MAX; }
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
-    const compressed = canvas.toDataURL("image/jpeg", 0.7);
-    setImgSrc(compressed);
-    setIcon("");
-    URL.revokeObjectURL(url);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 200;
+      let w = img.width;
+      let h = img.height;
+      if (w > h) { h = (h / w) * MAX; w = MAX; }
+      else { w = (w / h) * MAX; h = MAX; }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/jpeg", 0.7);
+      setImgSrc(compressed);
+      setIcon("");
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
-  img.src = url;
-};
 
   const handleSave = async () => {
     if (!nickname.trim()) { setError("ニックネームを入力してください"); return; }
@@ -66,6 +68,7 @@ export default function ProfileEditPage() {
         icon: icon || "",
         imgSrc: imgSrc || "",
         bio: bio.trim(),
+        plazaPublic,
         updatedAt: serverTimestamp(),
       }, { merge: true });
       setSaved(true);
@@ -86,7 +89,6 @@ export default function ProfileEditPage() {
       </div>
 
       <div style={{ padding:"20px 16px 100px" }}>
-        {/* アイコン */}
         <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:12, border:"1px solid #c8e6d0", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:14 }}>アイコン</div>
           <div style={{ textAlign:"center", marginBottom:14 }}>
@@ -116,7 +118,6 @@ export default function ProfileEditPage() {
           </div>
         </div>
 
-        {/* ニックネーム */}
         <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:12, border:"1px solid #c8e6d0", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:10 }}>ニックネーム</div>
           <input
@@ -127,8 +128,7 @@ export default function ProfileEditPage() {
           />
         </div>
 
-        {/* 一言自己紹介 */}
-        <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:20, border:"1px solid #c8e6d0", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+        <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:12, border:"1px solid #c8e6d0", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:4 }}>一言自己紹介</div>
           <div style={{ fontSize:11, color:"#8aaa95", marginBottom:10 }}>任意・MAPや質問箱に表示されます</div>
           <textarea
@@ -140,6 +140,19 @@ export default function ProfileEditPage() {
             style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", resize:"none", fontFamily:"inherit" }}
           />
           <div style={{ textAlign:"right", fontSize:11, color:"#8aaa95" }}>{bio.length}/80</div>
+        </div>
+
+        <div style={{ background:"#fff", borderRadius:16, padding:20, marginBottom:20, border:"1px solid #c8e6d0", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38" }}>💬 広場でアカウントを公開</div>
+              <div style={{ fontSize:11, color:"#8aaa95", marginTop:4 }}>ONにすると広場でニックネームとアイコンが表示されます</div>
+            </div>
+            <div onClick={() => setPlazaPublic(p => !p)}
+              style={{ width:48, height:26, borderRadius:13, background:plazaPublic?"#5ba872":"#c8e6d0", cursor:"pointer", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+              <div style={{ width:22, height:22, borderRadius:"50%", background:"#fff", position:"absolute", top:2, left:plazaPublic?24:2, transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }}/>
+            </div>
+          </div>
         </div>
 
         {error && (
