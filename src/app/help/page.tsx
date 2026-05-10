@@ -24,9 +24,30 @@ export default function HelpPage() {
       </div>
 
       <div style={{ padding:"16px 16px 80px" }}>
+         <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:16, border:"1px solid #c8e6d0" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:8 }}>📲 まずはホーム画面に追加しよう</div>
+          <div style={{ fontSize:12, color:"#5a7a65", lineHeight:2.0 }}>
+            ぱにいきはホーム画面に追加してアプリとして使えます。<br/>
+            <br/>
+            <strong>iPhoneの場合</strong><br/>
+            Safari で開く → 下の共有ボタン（□↑）をタップ →「ホーム画面に追加」をタップ<br/>
+            <br/>
+            <strong>Androidの場合</strong><br/>
+            Chrome で開く → 右上の「⋮」をタップ →「ホーム画面に追加」をタップ<br/>
+            <br/>
+            <strong>PCの場合</strong><br/>
+            Chrome のアドレスバー右側の「⊕」アイコンをクリック → インストール
+          </div>
+        </div>
+        <div style={{ background:"#fff8e1", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #ffe082" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#b07800", marginBottom:4 }}>⚠️ アプリが開かない場合</div>
+          <div style={{ fontSize:12, color:"#7a5800", lineHeight:1.8 }}>
+            ブラウザの「サイトの設定」→「データを削除」を行ってから再度アクセスしてください。それでも解決しない場合は、シークレットモード（プライベートブラウジング）でお試しください。
+          </div>
+        </div>
         <div style={{ background:"#fff", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #c8e6d0" }}>
           <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8 }}>
-            各機能の使い方を説明します。知りたい機能をタップしてください。
+            各機能の使い方は下のメニューからご確認ください。
           </div>
         </div>
       <div style={{ background:"#fff8e1", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #ffe082" }}>
