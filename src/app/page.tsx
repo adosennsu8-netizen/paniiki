@@ -136,7 +136,17 @@ export default function HomePage() {
             <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⭐</span>
           )}
 
-          {/* 🔔→💬 DMアイコンに変更 */}
+          {/* ベルアイコン（お知らせ） */}
+          <div onClick={() => router.push("/notices")} style={{ position:"relative", cursor:"pointer" }}>
+            <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🔔</div>
+            {unreadCount > 0 && (
+              <div style={{ position:"absolute", top:-4, right:-4, background:"#e07070", color:"#fff", borderRadius:"50%", width:18, height:18, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {unreadCount}
+              </div>
+            )}
+          </div>
+
+          {/* DMアイコン */}
           <div onClick={() => router.push("/dm")} style={{ position:"relative", cursor:"pointer" }}>
             <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
@@ -148,13 +158,6 @@ export default function HomePage() {
                 {dmUnread > 9 ? "9+" : dmUnread}
               </div>
             )}
-          </div>
-
-          <div onClick={() => router.push("/profile-edit")}
-            style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, border:"2px solid rgba(255,255,255,0.5)", cursor:"pointer", overflow:"hidden" }}>
-            {imgSrc
-              ? <img src={imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-              : icon}
           </div>
         </div>
       </div>
