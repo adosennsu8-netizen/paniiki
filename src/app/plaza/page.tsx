@@ -5,6 +5,27 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, getDoc } from "firebase/firestore";
 
+// ===== 匿名アバター生成 =====
+const ANIMALS = ["🐶","🐱","🐻","🐼","🦊","🐨","🐯","🦁","🐮","🐷","🐸","🐙","🦋","🐬","🦒","🦘","🦔","🐧","🦅","🐳"];
+const COLORS  = ["#f28b82","#fb8c00","#fdd835","#81c995","#4fc3f7","#a78bfa","#f48fb1","#80cbc4","#ffb74d","#ce93d8",
+                 "#ef9a9a","#80deea","#c5e1a5","#ffe082","#b0bec5","#90caf9","#ffcc80","#a5d6a7","#f8bbd0","#b39ddb"];
+
+// UIDから0〜N-1の整数を返す（簡易ハッシュ）
+function hashUid(uid: string, mod: number): number {
+  let h = 0;
+  for (let i = 0; i < uid.length; i++) {
+    h = (h * 31 + uid.charCodeAt(i)) >>> 0;
+  }
+  return h % mod;
+}
+
+function getAnonAvatar(uid: string): { animal: string; color: string } {
+  const animal = ANIMALS[hashUid(uid, ANIMALS.length)];
+  const color  = COLORS[hashUid(uid + "color", COLORS.length)];
+  return { animal, color };
+}
+// ============================
+
 interface Message {
   id: string;
   text: string;
@@ -104,18 +125,33 @@ export default function PlazaPage() {
         )}
         {messages.map(m => {
           const isMe = m.uid === uid;
+
+          // 匿名の場合はUID→動物＋色で識別
+          const anonAvatar = !m.isPublic ? getAnonAvatar(m.uid) : null;
+
           return (
             <div key={m.id} style={{ display:"flex", flexDirection:isMe?"row-reverse":"row", alignItems:"flex-end", gap:8, marginBottom:12 }}>
-             <div
-  onClick={() => m.isPublic && router.push(`/user/${m.uid}`)}
-  style={{ width:32, height:32, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, overflow:"hidden", cursor: m.isPublic ? "pointer" : "default" }}>
-  {m.imgSrc
-    ? <img src={m.imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-    : m.icon}
-</div>
+              {/* アバター */}
+              <div
+                onClick={() => m.isPublic && router.push(`/user/${m.uid}`)}
+                style={{
+                  width:32, height:32, borderRadius:"50%",
+                  background: anonAvatar ? anonAvatar.color : "#e8f5ec",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, flexShrink:0, overflow:"hidden",
+                  cursor: m.isPublic ? "pointer" : "default",
+                  border: anonAvatar ? "2px solid rgba(0,0,0,0.08)" : "none",
+                }}>
+                {m.imgSrc
+                  ? <img src={m.imgSrc} alt="icon" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : anonAvatar ? anonAvatar.animal : m.icon}
+              </div>
+
               <div style={{ maxWidth:"70%" }}>
                 {!isMe && (
-                  <div style={{ fontSize:11, color:"#8aaa95", marginBottom:3, paddingLeft:4 }}>{m.nickname}</div>
+                  <div style={{ fontSize:11, color:"#8aaa95", marginBottom:3, paddingLeft:4 }}>
+                    {m.isPublic ? m.nickname : anonAvatar?.animal + " のひと"}
+                  </div>
                 )}
                 <div style={{ background:isMe?"linear-gradient(135deg,#5ba872,#7bbf8c)":"#fff", color:isMe?"#fff":"#2d4a38", borderRadius:isMe?"16px 16px 4px 16px":"16px 16px 16px 4px", padding:"10px 14px", fontSize:14, lineHeight:1.6, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
                   {m.text}
