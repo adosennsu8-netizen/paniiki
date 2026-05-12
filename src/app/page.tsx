@@ -58,19 +58,18 @@ export default function HomePage() {
         console.log("plaza unread check failed:", e);
       }
 
-      // DM未読カウント監視
-      const dmQ = query(
-        collection(db, "dmConversations"),
-        where("participants", "array-contains", user.uid)
-      );
-      const dmUnsub = onSnapshot(dmQ, (dmSnap) => {
-        let total = 0;
-        dmSnap.docs.forEach((d) => {
-          total += d.data()[`unread_${user.uid}`] ?? 0;
-        });
-        setDmUnread(total);
+      // DM未読＋友達申請カウント監視
+      const dmQ = query(collection(db, "dmConversations"), where("participants", "array-contains", user.uid));
+      const reqQ = query(collection(db, "friendRequests"), where("toUid", "==", user.uid), where("status", "==", "pending"));
+      let dmTotal = 0; let reqTotal = 0;
+      onSnapshot(dmQ, (dmSnap) => {
+        dmTotal = dmSnap.docs.reduce((s, d) => s + (d.data()[`unread_${user.uid}`] ?? 0), 0);
+        setDmUnread(dmTotal + reqTotal);
       });
-      // ※ onAuthStateChanged の unsub と別管理になるが実用上問題なし
+      onSnapshot(reqQ, (reqSnap) => {
+        reqTotal = reqSnap.size;
+        setDmUnread(dmTotal + reqTotal);
+      });
 
       // Push通知の購読
       if ('serviceWorker' in navigator && 'PushManager' in window) {
