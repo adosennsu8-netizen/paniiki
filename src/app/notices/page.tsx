@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 interface Notice { id: string; title: string; body: string; createdAt: Date; }
 
@@ -18,7 +18,7 @@ export default function NoticesPage() {
       if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
       try {
-        const q = query(collection(db, "notices"));
+        const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
         const items: Notice[] = snap.docs.map(d => ({
           id: d.id,
@@ -26,7 +26,7 @@ export default function NoticesPage() {
           body: d.data().body || "",
           createdAt: d.data().createdAt?.toDate() || new Date(),
         }));
-        setNotices(items);
+        setNotices(items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
         if (snap.docs.length > 0) {
           await updateDoc(doc(db, "users", user.uid), {
             readNotices: arrayUnion(...snap.docs.map(d => d.id)),
