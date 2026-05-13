@@ -62,7 +62,7 @@ export default function PlazaPage() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(100));
+    const q = query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(50));
     const unsub = onSnapshot(q, (snap) => {
       const msgs: Message[] = snap.docs.map(d => ({
         id: d.id, text: d.data().text || "",
@@ -138,7 +138,13 @@ export default function PlazaPage() {
     } finally { setLoading(false); }
   };
 
-  const formatTime = (d: Date) => d.toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
+  const formatTime = (d: Date) => {
+    const now = new Date();
+    const isToday = d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    const time = d.toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
+    if (isToday) return time;
+    return d.toLocaleDateString("ja-JP", { month:"numeric", day:"numeric" }) + " " + time;
+  };
 
   return (
     <div style={{ height:"100dvh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif", display:"flex", flexDirection:"column" }}>
