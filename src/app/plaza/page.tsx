@@ -70,11 +70,17 @@ export default function PlazaPage() {
 
   const checkFriendStatus = async (targetUid: string) => {
     if (!uid || uid === targetUid) return;
+    // 友達チェック（ドキュメントIDが相手のUID）
     const friendSnap = await getDoc(doc(db, "friends", uid, "list", targetUid));
     if (friendSnap.exists()) { setFriendStatus("friend"); return; }
-    const reqSnap = await getDocs(query(collection(db, "friendRequests"),
+    // 自分→相手の申請中チェック
+    const sentSnap = await getDocs(query(collection(db, "friendRequests"),
       where("fromUid", "==", uid), where("toUid", "==", targetUid), where("status", "==", "pending")));
-    setFriendStatus(reqSnap.empty ? "none" : "pending");
+    if (!sentSnap.empty) { setFriendStatus("pending"); return; }
+    // 相手→自分の申請中チェック（相手がすでに申請済みのケース）
+    const receivedSnap = await getDocs(query(collection(db, "friendRequests"),
+      where("fromUid", "==", targetUid), where("toUid", "==", uid), where("status", "==", "pending")));
+    setFriendStatus(receivedSnap.empty ? "none" : "pending");
   };
 
   const handleAvatarTap = async (m: Message) => {

@@ -5,8 +5,9 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection, query, where, orderBy, onSnapshot,
-  Timestamp, doc, updateDoc, addDoc, serverTimestamp, getDoc,
+  Timestamp, doc, updateDoc, serverTimestamp, getDoc, setDoc,
 } from "firebase/firestore";
+import { getConversationId } from "@/lib/dm";
 
 type Conversation = {
   id: string; otherUid: string; otherNickname: string;
@@ -45,7 +46,11 @@ export default function DMListPage() {
   // DM一覧
   useEffect(() => {
     if (!uid) return;
-    const q = query(collection(db, "dmConversations"), where("participants", "array-contains", uid), orderBy("lastMessageAt", "desc"));
+    const q = query(
+      collection(db, "dmConversations"),
+      where("participants", "array-contains", uid),
+      orderBy("lastMessageAt", "desc")
+    );
     const unsub = onSnapshot(q, (snap) => {
       setConvs(snap.docs.map(d => {
         const data = d.data();
@@ -68,7 +73,11 @@ export default function DMListPage() {
   // 友達申請受信
   useEffect(() => {
     if (!uid) return;
-    const q = query(collection(db, "friendRequests"), where("toUid", "==", uid), where("status", "==", "pending"));
+    const q = query(
+      collection(db, "friendRequests"),
+      where("toUid", "==", uid),
+      where("status", "==", "pending")
+    );
     const unsub = onSnapshot(q, (snap) => {
       setRequests(snap.docs.map(d => ({
         id: d.id,
@@ -86,17 +95,34 @@ export default function DMListPage() {
     if (!uid || actionLoading) return;
     setActionLoading(req.id);
     try {
-      // 申請をacceptedに
+      const convId = getConversationId(uid, req.fromUid);
+
+      // DM会話を作成（両者のparticipantsに入るので双方から見える）
+      await setDoc(doc(db, "dmConversations", convId), {
+        participants: [uid, req.fromUid],
+        lastMessage: "",
+        lastMessageAt: serverTimestamp(),
+        [`unread_${uid}`]: 0,
+        [`unread_${req.fromUid}`]: 0,
+        [`nickname_${uid}`]: myNickname,
+        [`icon_${uid}`]: myIcon,
+        [`imgSrc_${uid}`]: myImgSrc || null,
+        [`nickname_${req.fromUid}`]: req.fromNickname,
+        [`icon_${req.fromUid}`]: req.fromIcon,
+        [`imgSrc_${req.fromUid}`]: req.fromImgSrc || null,
+      }, { merge: true });
+
+      // 双方向で friends/list に追加（ドキュメントIDを相手のUIDにする）
+      await setDoc(doc(db, "friends", uid, "list", req.fromUid), {
+        uid: req.fromUid, createdAt: serverTimestamp()
+      });
+      await setDoc(doc(db, "friends", req.fromUid, "list", uid), {
+        uid, createdAt: serverTimestamp()
+      });
+
+      // 申請をacceptedに更新
       await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
-      // 双方向で friends/list に追加
-      await addDoc(collection(db, "friends", uid, "list"), { uid: req.fromUid, createdAt: serverTimestamp() });
-      await addDoc(collection(db, "friends", req.fromUid, "list"), { uid, createdAt: serverTimestamp() });
-      // DM会話を作成
-      const { createOrGetConversation } = await import("@/lib/dm");
-      await createOrGetConversation(
-        { uid, nickname: myNickname, icon: myIcon, imgSrc: myImgSrc },
-        { uid: req.fromUid, nickname: req.fromNickname, icon: req.fromIcon, imgSrc: req.fromImgSrc }
-      );
+
     } catch(e) { console.error(e); } finally { setActionLoading(null); }
   };
 
@@ -112,7 +138,9 @@ export default function DMListPage() {
     if (!ts) return "";
     const d = ts.toDate(), now = new Date();
     const isToday = d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
-    return isToday ? d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
+    return isToday
+      ? d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})
+      : d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
   };
 
   const totalUnread = convs.reduce((s,c) => s+c.unreadCount, 0);
@@ -138,7 +166,9 @@ export default function DMListPage() {
           {requests.map(req => (
             <div key={req.id} style={{ background:"#fff", borderRadius:16, padding:14, marginBottom:10, display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
               <div style={{ width:44, height:44, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, overflow:"hidden", flexShrink:0 }}>
-                {req.fromImgSrc ? <img src={req.fromImgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : req.fromIcon}
+                {req.fromImgSrc
+                  ? <img src={req.fromImgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : req.fromIcon}
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:700, fontSize:14, color:"#2d4a38" }}>{req.fromNickname}</div>
@@ -170,7 +200,9 @@ export default function DMListPage() {
         </div>
       ) : (
         <>
-          {requests.length > 0 && <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", padding:"12px 16px 8px" }}>💬 メッセージ</div>}
+          {requests.length > 0 && (
+            <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", padding:"12px 16px 8px" }}>💬 メッセージ</div>
+          )}
           <ul style={{ listStyle:"none", margin:0, padding:0 }}>
             {convs.map(conv => (
               <li key={conv.id}>
