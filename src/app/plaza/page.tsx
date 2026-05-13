@@ -33,6 +33,15 @@ export default function PlazaPage() {
   const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; nickname: string; text: string } | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+
+  const toggleReply = (id: string) => {
+    setExpandedReplies(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   const [bottomSheet, setBottomSheet] = useState<BottomSheetUser | null>(null);
   const [friendStatus, setFriendStatus] = useState<"none"|"pending"|"friend">("none");
   const [friendLoading, setFriendLoading] = useState(false);
@@ -53,7 +62,7 @@ export default function PlazaPage() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(50));
+    const q = query(collection(db, "chatMessages"), orderBy("createdAt", "desc"), limit(100));
     const unsub = onSnapshot(q, (snap) => {
       const msgs: Message[] = snap.docs.map(d => ({
         id: d.id, text: d.data().text || "",
@@ -163,9 +172,17 @@ export default function PlazaPage() {
               <div style={{ maxWidth:"72%" }}>
                 {!isMe && <div style={{ fontSize:11, color:"#8aaa95", marginBottom:3, paddingLeft:4 }}>{displayName}</div>}
                 {m.replyTo && (
-                  <div style={{ background:"rgba(0,0,0,0.06)", borderLeft:"3px solid #5ba872", borderRadius:"8px 8px 0 0", padding:"6px 10px", fontSize:11, color:"#5a7a65" }}>
+                  <div
+                    onClick={() => toggleReply(m.id)}
+                    style={{ background:"rgba(0,0,0,0.06)", borderLeft:"3px solid #5ba872", borderRadius:"8px 8px 0 0", padding:"6px 10px", fontSize:11, color:"#5a7a65", cursor:"pointer" }}>
                     <span style={{ fontWeight:700 }}>↩ {m.replyTo.nickname}</span>
-                    <div style={{ marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:200 }}>{m.replyTo.text}</div>
+                    <span style={{ fontSize:10, color:"#8aaa95", marginLeft:6 }}>{expandedReplies.has(m.id) ? "▲" : "▼ タップで表示"}</span>
+                    {expandedReplies.has(m.id) && (
+                      <div style={{ marginTop:4, whiteSpace:"pre-wrap", wordBreak:"break-word", lineHeight:1.6 }}>{m.replyTo.text}</div>
+                    )}
+                    {!expandedReplies.has(m.id) && (
+                      <div style={{ marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:200 }}>{m.replyTo.text}</div>
+                    )}
                   </div>
                 )}
                 <div onClick={() => { if(!isMe) setReplyTo({ id:m.id, nickname:displayName, text:m.text }); }}
