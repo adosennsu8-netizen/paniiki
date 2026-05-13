@@ -29,6 +29,7 @@ export default function DMListPage() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState<FriendRequest[]>([]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -66,6 +67,27 @@ export default function DMListPage() {
         };
       }));
       setLoading(false);
+    });
+    return () => unsub();
+  }, [uid]);
+
+  // 自分が送った申請が承認された通知
+  useEffect(() => {
+    if (!uid) return;
+    const q = query(
+      collection(db, "friendRequests"),
+      where("fromUid", "==", uid),
+      where("status", "==", "accepted")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setAccepted(snap.docs.map(d => ({
+        id: d.id,
+        fromUid: d.data().toUid,
+        fromNickname: d.data().toNickname || "ユーザー",
+        fromIcon: d.data().toIcon || "🐾",
+        fromImgSrc: d.data().toImgSrc || "",
+        createdAt: d.data().createdAt ?? null,
+      })));
     });
     return () => unsub();
   }, [uid]);
@@ -120,8 +142,13 @@ export default function DMListPage() {
         uid, createdAt: serverTimestamp()
       });
 
-      // 申請をacceptedに更新
-      await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
+      // 申請をacceptedに更新（承認者の情報も保存して相手に通知）
+      await updateDoc(doc(db, "friendRequests", req.id), {
+        status: "accepted",
+        toNickname: myNickname,
+        toIcon: myIcon,
+        toImgSrc: myImgSrc || null,
+      });
 
     } catch(e) { console.error(e); } finally { setActionLoading(null); }
   };
@@ -144,6 +171,7 @@ export default function DMListPage() {
   };
 
   const totalUnread = convs.reduce((s,c) => s+c.unreadCount, 0);
+  const totalBadge = totalUnread + requests.length + accepted.length;
 
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
@@ -151,9 +179,9 @@ export default function DMListPage() {
         <button onClick={() => router.back()} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer" }}>← 戻る</button>
         <div style={{ color:"#fff", fontSize:18, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}>
           💬 DM
-          {(totalUnread + requests.length) > 0 && (
+          {totalBadge > 0 && (
             <span style={{ background:"#e07070", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
-              {totalUnread + requests.length}
+              {totalBadge}
             </span>
           )}
         </div>
@@ -189,7 +217,27 @@ export default function DMListPage() {
         </div>
       )}
 
-      {/* DM一覧 */}
+      {/* 承認通知 */}
+      {accepted.length > 0 && (
+        <div style={{ padding:"12px 16px 0" }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:8 }}>✅ 友達申請が承認されました</div>
+          {accepted.map(req => (
+            <div key={req.id} style={{ background:"#e8f5ec", borderRadius:16, padding:14, marginBottom:10, display:"flex", alignItems:"center", gap:12, border:"1px solid #c8e6d0" }}>
+              <div style={{ width:44, height:44, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, overflow:"hidden", flexShrink:0 }}>
+                {req.fromImgSrc
+                  ? <img src={req.fromImgSrc} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : req.fromIcon}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:700, fontSize:14, color:"#2d4a38" }}>{req.fromNickname}</div>
+                <div style={{ fontSize:11, color:"#5a7a65", marginTop:2 }}>友達申請を承認しました</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* DM一覧 */}}
       {loading ? (
         <div style={{ display:"flex", justifyContent:"center", paddingTop:60, color:"#8aaa95" }}>読み込み中…</div>
       ) : convs.length === 0 ? (

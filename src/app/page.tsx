@@ -61,14 +61,19 @@ export default function HomePage() {
       // DM未読＋友達申請カウント監視
       const dmQ = query(collection(db, "dmConversations"), where("participants", "array-contains", user.uid));
       const reqQ = query(collection(db, "friendRequests"), where("toUid", "==", user.uid), where("status", "==", "pending"));
-      let dmTotal = 0; let reqTotal = 0;
+      const acceptedQ = query(collection(db, "friendRequests"), where("fromUid", "==", user.uid), where("status", "==", "accepted"));
+      let dmTotal = 0; let reqTotal = 0; let acceptedTotal = 0;
       onSnapshot(dmQ, (dmSnap) => {
         dmTotal = dmSnap.docs.reduce((s, d) => s + (d.data()[`unread_${user.uid}`] ?? 0), 0);
-        setDmUnread(dmTotal + reqTotal);
+        setDmUnread(dmTotal + reqTotal + acceptedTotal);
       });
       onSnapshot(reqQ, (reqSnap) => {
         reqTotal = reqSnap.size;
-        setDmUnread(dmTotal + reqTotal);
+        setDmUnread(dmTotal + reqTotal + acceptedTotal);
+      });
+      onSnapshot(acceptedQ, (acceptedSnap) => {
+        acceptedTotal = acceptedSnap.size;
+        setDmUnread(dmTotal + reqTotal + acceptedTotal);
       });
 
       // Push通知の購読

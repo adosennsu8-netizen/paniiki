@@ -139,7 +139,7 @@ export default function DMChatPage() {
     <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
       {/* ヘッダー */}
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"12px 16px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 2px 12px rgba(91,168,114,0.25)", flexShrink:0 }}>
-        <button onClick={() => router.push("/dm")} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 12px", fontSize:13, cursor:"pointer" }}>← 戻る</button>
+        <button onClick={() => router.replace("/dm")} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 12px", fontSize:13, cursor:"pointer" }}>← 戻る</button>
         {meta && (
           <>
             {meta.otherImgSrc ? (
