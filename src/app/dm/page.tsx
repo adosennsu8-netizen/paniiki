@@ -237,7 +237,7 @@ export default function DMListPage() {
         </div>
       )}
 
-      {/* DM\u4e00\u89a7 */}
+      {/* DM一覧 */}
       {loading ? (
         <div style={{ display:"flex", justifyContent:"center", paddingTop:60, color:"#8aaa95" }}>隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ窶ｦ</div>
       ) : convs.length === 0 ? (
