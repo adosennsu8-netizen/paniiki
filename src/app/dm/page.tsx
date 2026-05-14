@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -92,9 +92,11 @@ export default function DMListPage() {
     return () => unsub();
   }, [uid]);
 
-  // 承認通知を既読にする（DMページを開いたら）
+  // 承認通知を既読にする（初回のみ）
+  const markedRef = useRef(false);
   useEffect(() => {
-    if (!uid || accepted.length === 0) return;
+    if (!uid || accepted.length === 0 || markedRef.current) return;
+    markedRef.current = true;
     const batch = writeBatch(db);
     accepted.forEach(req => {
       batch.update(doc(db, "friendRequests", req.id), { status: "read" });
