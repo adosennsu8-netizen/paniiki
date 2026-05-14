@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
@@ -44,7 +44,7 @@ export default function DMListPage() {
     return () => unsub();
   }, [router]);
 
-  // DM一覧
+  // DM荳隕ｧ
   useEffect(() => {
     if (!uid) return;
     const q = query(
@@ -58,8 +58,8 @@ export default function DMListPage() {
         const otherUid = (data.participants as string[]).find(u => u !== uid)!;
         return {
           id: d.id, otherUid,
-          otherNickname: data[`nickname_${otherUid}`] ?? "ユーザー",
-          otherIcon: data[`icon_${otherUid}`] ?? "🐾",
+          otherNickname: data[`nickname_${otherUid}`] ?? "繝ｦ繝ｼ繧ｶ繝ｼ",
+          otherIcon: data[`icon_${otherUid}`] ?? "誓",
           otherImgSrc: data[`imgSrc_${otherUid}`] ?? undefined,
           lastMessage: data.lastMessage ?? "",
           lastMessageAt: data.lastMessageAt ?? null,
@@ -71,7 +71,7 @@ export default function DMListPage() {
     return () => unsub();
   }, [uid]);
 
-  // 自刁E��送った申請が承認された通知
+  // 閾ｪ蛻・・ｽ・ｽ騾√▲縺溽筏隲九′謇ｿ隱阪＆繧後◆騾夂衍
   useEffect(() => {
     if (!uid) return;
     const q = query(
@@ -83,8 +83,8 @@ export default function DMListPage() {
       setAccepted(snap.docs.map(d => ({
         id: d.id,
         fromUid: d.data().toUid,
-        fromNickname: d.data().toNickname || "ユーザー",
-        fromIcon: d.data().toIcon || "🐾",
+        fromNickname: d.data().toNickname || "繝ｦ繝ｼ繧ｶ繝ｼ",
+        fromIcon: d.data().toIcon || "誓",
         fromImgSrc: d.data().toImgSrc || "",
         createdAt: d.data().createdAt ?? null,
       })));
@@ -92,7 +92,7 @@ export default function DMListPage() {
     return () => unsub();
   }, [uid]);
 
-  // 友達申請受信
+  // 蜿矩＃逕ｳ隲句女菫｡
   useEffect(() => {
     if (!uid) return;
     const q = query(
@@ -104,8 +104,8 @@ export default function DMListPage() {
       setRequests(snap.docs.map(d => ({
         id: d.id,
         fromUid: d.data().fromUid,
-        fromNickname: d.data().fromNickname || "ユーザー",
-        fromIcon: d.data().fromIcon || "🐾",
+        fromNickname: d.data().fromNickname || "繝ｦ繝ｼ繧ｶ繝ｼ",
+        fromIcon: d.data().fromIcon || "誓",
         fromImgSrc: d.data().fromImgSrc || "",
         createdAt: d.data().createdAt ?? null,
       })));
@@ -119,7 +119,7 @@ export default function DMListPage() {
     try {
       const convId = getConversationId(uid, req.fromUid);
 
-      // DM会話を作�E�E�両老E�Eparticipantsに入る�Eで双方から見える！E
+      // DM莨夊ｩｱ繧剃ｽ懶ｿｽE・ｽE・ｽ荳｡閠・・ｽEparticipants縺ｫ蜈･繧具ｿｽE縺ｧ蜿梧婿縺九ｉ隕九∴繧具ｼ・
       await setDoc(doc(db, "dmConversations", convId), {
         participants: [uid, req.fromUid],
         lastMessage: "",
@@ -134,7 +134,7 @@ export default function DMListPage() {
         [`imgSrc_${req.fromUid}`]: req.fromImgSrc || null,
       }, { merge: true });
 
-      // 双方向で friends/list に追加�E�ドキュメンチEDを相手�EUIDにする�E�E
+      // 蜿梧婿蜷代〒 friends/list 縺ｫ霑ｽ蜉・ｽE・ｽ繝峨く繝･繝｡繝ｳ繝・D繧堤嶌謇具ｿｽEUID縺ｫ縺吶ｋ・ｽE・ｽE
       await setDoc(doc(db, "friends", uid, "list", req.fromUid), {
         uid: req.fromUid, createdAt: serverTimestamp()
       });
@@ -142,7 +142,7 @@ export default function DMListPage() {
         uid, createdAt: serverTimestamp()
       });
 
-      // 申請をacceptedに更新�E�承認老E�E惁E��も保存して相手に通知�E�E
+      // 逕ｳ隲九ｒaccepted縺ｫ譖ｴ譁ｰ・ｽE・ｽ謇ｿ隱崎・・ｽE諠・・ｽ・ｽ繧ゆｿ晏ｭ倥＠縺ｦ逶ｸ謇九↓騾夂衍・ｽE・ｽE
       await updateDoc(doc(db, "friendRequests", req.id), {
         status: "accepted",
         toNickname: myNickname,
@@ -176,9 +176,9 @@ export default function DMListPage() {
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif" }}>
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 20px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 12px rgba(91,168,114,0.25)" }}>
-        <button onClick={() => { window.location.replace("/"); }} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer" }}>🏠 ホ�Eム</button>
+        <button onClick={() => { window.location.replace("/"); }} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer" }}>匠 繝幢ｿｽE繝</button>
         <div style={{ color:"#fff", fontSize:18, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}>
-          💬 DM
+          町 DM
           {totalBadge > 0 && (
             <span style={{ background:"#e07070", color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
               {totalBadge}
@@ -187,10 +187,10 @@ export default function DMListPage() {
         </div>
       </div>
 
-      {/* 友達申諁E*/}
+      {/* 蜿矩＃逕ｳ隲・*/}
       {requests.length > 0 && (
         <div style={{ padding:"12px 16px 0" }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:8 }}>👋 友達申諁E/div>
+          <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:8 }}>窓 蜿矩＃逕ｳ隲・/div>
           {requests.map(req => (
             <div key={req.id} style={{ background:"#fff", borderRadius:16, padding:14, marginBottom:10, display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
               <div style={{ width:44, height:44, borderRadius:"50%", background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, overflow:"hidden", flexShrink:0 }}>
@@ -200,16 +200,16 @@ export default function DMListPage() {
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:700, fontSize:14, color:"#2d4a38" }}>{req.fromNickname}</div>
-                <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>友達申請が届いてぁE��ぁE/div>
+                <div style={{ fontSize:11, color:"#8aaa95", marginTop:2 }}>蜿矩＃逕ｳ隲九′螻翫＞縺ｦ縺・・ｽ・ｽ縺・/div>
               </div>
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={() => handleAccept(req)} disabled={actionLoading===req.id}
                   style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                  {actionLoading===req.id ? "…" : "承誁E}
+                  {actionLoading===req.id ? "窶ｦ" : "謇ｿ隱・}
                 </button>
                 <button onClick={() => handleReject(req)} disabled={actionLoading===req.id}
                   style={{ background:"#f5e8e8", color:"#c97070", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                  拒否
+                  諡貞凄
                 </button>
               </div>
             </div>
@@ -217,10 +217,10 @@ export default function DMListPage() {
         </div>
       )}
 
-      {/* 承認通知 */}
+      {/* 謇ｿ隱埼夂衍 */}
       {accepted.length > 0 && (
         <div style={{ padding:"12px 16px 0" }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:8 }}>✁E友達申請が承認されました</div>
+          <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", marginBottom:8 }}>笨・蜿矩＃逕ｳ隲九′謇ｿ隱阪＆繧後∪縺励◆</div>
           {accepted.map(req => (
             <div key={req.id} style={{ background:"#e8f5ec", borderRadius:16, padding:14, marginBottom:10, display:"flex", alignItems:"center", gap:12, border:"1px solid #c8e6d0" }}>
               <div style={{ width:44, height:44, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, overflow:"hidden", flexShrink:0 }}>
@@ -230,26 +230,26 @@ export default function DMListPage() {
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:700, fontSize:14, color:"#2d4a38" }}>{req.fromNickname}</div>
-                <div style={{ fontSize:11, color:"#5a7a65", marginTop:2 }}>友達申請を承認しました</div>
+                <div style={{ fontSize:11, color:"#5a7a65", marginTop:2 }}>蜿矩＃逕ｳ隲九ｒ謇ｿ隱阪＠縺ｾ縺励◆</div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-    {/* DM一覧 */}
+      {/* DM\u4e00\u89a7 */}
       {loading ? (
-        <div style={{ display:"flex", justifyContent:"center", paddingTop:60, color:"#8aaa95" }}>読み込み中…</div>
+        <div style={{ display:"flex", justifyContent:"center", paddingTop:60, color:"#8aaa95" }}>隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ窶ｦ</div>
       ) : convs.length === 0 ? (
         <div style={{ textAlign:"center", paddingTop:60, color:"#8aaa95" }}>
-          <div style={{ fontSize:48, marginBottom:12 }}>💬</div>
-          <div style={{ fontSize:14 }}>まだDMはありません</div>
-          <div style={{ fontSize:12, marginTop:4, color:"#b0c4b8" }}>友達申請が承認されるとDMできまぁE/div>
+          <div style={{ fontSize:48, marginBottom:12 }}>町</div>
+          <div style={{ fontSize:14 }}>縺ｾ縺DM縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>
+          <div style={{ fontSize:12, marginTop:4, color:"#b0c4b8" }}>蜿矩＃逕ｳ隲九′謇ｿ隱阪＆繧後ｋ縺ｨDM縺ｧ縺阪∪縺・/div>
         </div>
       ) : (
         <>
           {requests.length > 0 && (
-            <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", padding:"12px 16px 8px" }}>💬 メチE��ージ</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"#8aaa95", letterSpacing:"0.1em", padding:"12px 16px 8px" }}>町 繝｡繝・・ｽ・ｽ繝ｼ繧ｸ</div>
           )}
           <ul style={{ listStyle:"none", margin:0, padding:0 }}>
             {convs.map(conv => (
@@ -272,7 +272,7 @@ export default function DMListPage() {
                       <span style={{ fontSize:11, color:"#8aaa95", marginLeft:8, flexShrink:0 }}>{formatTime(conv.lastMessageAt)}</span>
                     </div>
                     <div style={{ fontSize:12, marginTop:2, color: conv.unreadCount>0?"#3d7a55":"#8aaa95", fontWeight: conv.unreadCount>0?600:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {conv.lastMessage || "まだメチE��ージはありません"}
+                      {conv.lastMessage || "縺ｾ縺繝｡繝・・ｽ・ｽ繝ｼ繧ｸ縺ｯ縺ゅｊ縺ｾ縺帙ｓ"}
                     </div>
                   </div>
                 </button>
