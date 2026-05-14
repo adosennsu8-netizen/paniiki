@@ -5,7 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection, query, where, orderBy, onSnapshot,
-  Timestamp, doc, updateDoc, serverTimestamp, getDoc, setDoc,
+  Timestamp, doc, updateDoc, serverTimestamp, getDoc, setDoc, writeBatch,
 } from "firebase/firestore";
 import { getConversationId } from "@/lib/dm";
 
@@ -91,6 +91,16 @@ export default function DMListPage() {
     });
     return () => unsub();
   }, [uid]);
+
+  // 承認通知を既読にする（DMページを開いたら）
+  useEffect(() => {
+    if (!uid || accepted.length === 0) return;
+    const batch = writeBatch(db);
+    accepted.forEach(req => {
+      batch.update(doc(db, "friendRequests", req.id), { status: "read" });
+    });
+    batch.commit().catch(console.error);
+  }, [uid, accepted]);
 
   // 友達申請受信
   useEffect(() => {
