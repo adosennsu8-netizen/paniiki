@@ -237,7 +237,7 @@ export default function DMListPage() {
         </div>
       )}
 
-      {/* DM一覧 */}
+      {/* DM�ꗗ */}
       {loading ? (
         <div style={{ display:"flex", justifyContent:"center", paddingTop:60, color:"#8aaa95" }}>読み込み中…</div>
       ) : convs.length === 0 ? (
@@ -284,5 +284,3 @@ export default function DMListPage() {
     </div>
   );
 }
- 
- 
