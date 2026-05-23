@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, serverTimestamp, doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 const TYPE_CONFIG = {
   attack:  { label:"パニック発作", color:"#e07070", bg:"#fde8e8", icon:"⚡" },
@@ -27,6 +27,9 @@ export default function CalendarPage() {
   const [newLabel, setNewLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const [viewDate, setViewDate] = useState(new Date());
+  const [editEvent, setEditEvent] = useState<CalEvent | null>(null);
+  const [editType, setEditType] = useState<EventType>("attack");
+  const [editLabel, setEditLabel] = useState("");
 
   const today = new Date();
   const year = viewDate.getFullYear();
@@ -38,17 +41,8 @@ export default function CalendarPage() {
   const monthNames = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
   const dayNames = ["日","月","火","水","木","金","土"];
 
-  const prevMonth = () => {
-    const d = new Date(viewDate);
-    d.setMonth(d.getMonth() - 1);
-    setViewDate(d);
-  };
-
-  const nextMonth = () => {
-    const d = new Date(viewDate);
-    d.setMonth(d.getMonth() + 1);
-    setViewDate(d);
-  };
+  const prevMonth = () => { const d = new Date(viewDate); d.setMonth(d.getMonth() - 1); setViewDate(d); };
+  const nextMonth = () => { const d = new Date(viewDate); d.setMonth(d.getMonth() + 1); setViewDate(d); };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -73,11 +67,10 @@ export default function CalendarPage() {
     );
     const snap = await getDocs(q);
     const map: Record<string, CalEvent[]> = {};
-    snap.forEach(doc => {
-      const d = doc.data() as CalEvent;
-      d.id = doc.id;
-      if (!map[d.date]) map[d.date] = [];
-      map[d.date].push(d);
+    snap.forEach(d => {
+      const ev = { ...d.data(), id: d.id } as CalEvent;
+      if (!map[ev.date]) map[ev.date] = [];
+      map[ev.date].push(ev);
     });
     setEvents(map);
   };
@@ -87,18 +80,39 @@ export default function CalendarPage() {
     setLoading(true);
     try {
       await addDoc(collection(db, "calEvents"), {
-        uid,
-        type: newType,
+        uid, type: newType,
         label: newLabel || TYPE_CONFIG[newType].label,
-        date: selected,
-        createdAt: serverTimestamp(),
+        date: selected, createdAt: serverTimestamp(),
       });
       await loadEvents(uid, monthStr);
       setShowAdd(false);
       setNewLabel("");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  };
+
+  const handleDelete = async (ev: CalEvent) => {
+    if (!confirm("この記録を削除しますか？")) return;
+    await deleteDoc(doc(db, "calEvents", ev.id));
+    await loadEvents(uid, monthStr);
+  };
+
+  const openEdit = (ev: CalEvent) => {
+    setEditEvent(ev);
+    setEditType(ev.type);
+    setEditLabel(ev.label);
+  };
+
+  const handleEdit = async () => {
+    if (!editEvent) return;
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "calEvents", editEvent.id), {
+        type: editType,
+        label: editLabel || TYPE_CONFIG[editType].label,
+      });
+      await loadEvents(uid, monthStr);
+      setEditEvent(null);
+    } finally { setLoading(false); }
   };
 
   const dk = (d: number) => `${monthStr}-${String(d).padStart(2, "0")}`;
@@ -156,14 +170,24 @@ export default function CalendarPage() {
           {(events[selected] || []).length === 0 ? (
             <p style={{ color:"#8aaa95", fontSize:13, textAlign:"center", margin:0 }}>記録なし</p>
           ) : (
-            (events[selected] || []).map((ev, i) => {
-              const cfg = TYPE_CONFIG[ev.type] || TYPE_CONFIG.good;
+            (events[selected] || []).map((ev) => {
+              const cfg = TYPE_CONFIG[ev.type] || TYPE_CONFIG.other;
               return (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:cfg.bg, borderRadius:10, padding:"10px 14px", marginBottom:8 }}>
+                <div key={ev.id} style={{ display:"flex", alignItems:"center", gap:10, background:cfg.bg, borderRadius:10, padding:"10px 14px", marginBottom:8 }}>
                   <span style={{ fontSize:20 }}>{cfg.icon}</span>
-                  <div>
+                  <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:cfg.color }}>{cfg.label}</div>
                     <div style={{ fontSize:12, color:"#5a7a65" }}>{ev.label}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    <button onClick={() => openEdit(ev)}
+                      style={{ background:"rgba(255,255,255,0.7)", border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, cursor:"pointer", color:"#5a7a65" }}>
+                      編集
+                    </button>
+                    <button onClick={() => handleDelete(ev)}
+                      style={{ background:"rgba(255,255,255,0.7)", border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, cursor:"pointer", color:"#e07070" }}>
+                      削除
+                    </button>
                   </div>
                 </div>
               );
@@ -172,6 +196,7 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* 追加モーダル */}
       {showAdd && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
           <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
@@ -185,13 +210,39 @@ export default function CalendarPage() {
               ))}
             </div>
             <input placeholder="メモ（任意）" value={newLabel} onChange={e => setNewLabel(e.target.value)}
-              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:12 }}
-            />
+              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:12 }}/>
             <button onClick={handleAdd} disabled={loading}
               style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
               {loading ? "保存中…" : "保存する"}
             </button>
             <button onClick={() => setShowAdd(false)}
+              style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 編集モーダル */}
+      {editEvent && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
+            <div style={{ fontWeight:700, fontSize:16, color:"#2d4a38", marginBottom:16 }}>✏️ 記録を編集</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
+              {(Object.entries(TYPE_CONFIG) as [EventType, typeof TYPE_CONFIG[EventType]][]).map(([k, v]) => (
+                <button key={k} onClick={() => setEditType(k)}
+                  style={{ background:editType===k?v.bg:"#e8f5ec", border:editType===k?`2px solid ${v.color}`:"2px solid transparent", borderRadius:10, padding:"8px 12px", cursor:"pointer", fontSize:13, color:"#2d4a38", textAlign:"left" }}>
+                  {v.icon} {v.label}
+                </button>
+              ))}
+            </div>
+            <input placeholder="メモ（任意）" value={editLabel} onChange={e => setEditLabel(e.target.value)}
+              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:12 }}/>
+            <button onClick={handleEdit} disabled={loading}
+              style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
+              {loading ? "保存中…" : "保存する"}
+            </button>
+            <button onClick={() => setEditEvent(null)}
               style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               キャンセル
             </button>

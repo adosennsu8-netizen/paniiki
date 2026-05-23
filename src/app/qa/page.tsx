@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 
 const ANON_ANIMALS = ["ことりさん","うさぎさん","たぬきさん","きつねさん","くまさん","ねこさん","いぬさん","りすさん","ぱんださん","かえるさん","ちょうさん","はちどりさん"];
 const ANON_EMOJI = ["🐦","🐰","🦝","🦊","🐻","🐱","🐶","🐿","🐼","🐸","🦋","🐦"];
@@ -11,7 +11,7 @@ const anonName = (seed: number) => ANON_ANIMALS[seed % ANON_ANIMALS.length];
 const anonEmoji = (seed: number) => ANON_EMOJI[seed % ANON_EMOJI.length];
 
 interface Post { id: string; q: string; tags: string[]; seed: number; time: string; answers: number; }
-interface Answer { id: string; text: string; seed: number; }
+interface Answer { id: string; text: string; seed: number; likes: number; likedBy?: string[]; }
 interface Survey { id: string; q: string; options: string[]; votes: number[]; seed: number; }
 
 export default function QAPage() {
@@ -38,7 +38,6 @@ export default function QAPage() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
-      const snap = await getDoc(doc(db, "users", user.uid));
       setIsPremium(true);
       await loadPosts();
       await loadSurveys();
@@ -66,7 +65,7 @@ export default function QAPage() {
     const q = query(collection(db, "qaPosts", postId, "answers"), orderBy("createdAt", "asc"));
     const snap = await getDocs(q);
     const list: Answer[] = [];
-    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Answer));
+    snap.forEach(d => list.push({ id: d.id, likes: 0, ...d.data() } as Answer));
     setAnswers(a => ({ ...a, [postId]: list }));
   };
 
@@ -91,24 +90,40 @@ export default function QAPage() {
     } finally { setLoading(false); }
   };
 
- const handleAnswer = async (postId: string) => {
-  const text = answerText[postId]?.trim();
-  if (!text || !uid) return;
-  await addDoc(collection(db, "qaPosts", postId, "answers"), {
-    text, seed, uid, createdAt: serverTimestamp(),
-  });
-  const postRef = doc(db, "qaPosts", postId);
-  const postSnap = await getDoc(postRef);
-  const currentCount = postSnap.data()?.answers ?? 0;
-  await updateDoc(postRef, { answers: currentCount + 1 });
-  setAnswerText(a => ({ ...a, [postId]: "" }));
-  await loadAnswers(postId);
-  setPosts(prev => prev.map(p =>
-    p.id === postId
-      ? { ...p, answers: (p.answers ?? 0) + 1 }
-      : p
-  ));
-};
+  const handleAnswer = async (postId: string) => {
+    const text = answerText[postId]?.trim();
+    if (!text || !uid) return;
+    await addDoc(collection(db, "qaPosts", postId, "answers"), {
+      text, seed, uid, likes: 0, likedBy: [], createdAt: serverTimestamp(),
+    });
+    const postRef = doc(db, "qaPosts", postId);
+    const postSnap = await getDoc(postRef);
+    const currentCount = postSnap.data()?.answers ?? 0;
+    await updateDoc(postRef, { answers: currentCount + 1 });
+    setAnswerText(a => ({ ...a, [postId]: "" }));
+    await loadAnswers(postId);
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, answers: (p.answers ?? 0) + 1 } : p));
+  };
+
+  const handleAnswerLike = async (postId: string, answer: Answer) => {
+    if (!uid) return;
+    const alreadyLiked = answer.likedBy?.includes(uid);
+    // 楽観的更新
+    setAnswers(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || []).map(a => a.id === answer.id ? {
+        ...a,
+        likes: alreadyLiked ? a.likes - 1 : a.likes + 1,
+        likedBy: alreadyLiked
+          ? (a.likedBy || []).filter(id => id !== uid)
+          : [...(a.likedBy || []), uid],
+      } : a),
+    }));
+    await updateDoc(doc(db, "qaPosts", postId, "answers", answer.id), {
+      likes: increment(alreadyLiked ? -1 : 1),
+      likedBy: alreadyLiked ? arrayRemove(uid) : arrayUnion(uid),
+    });
+  };
 
   const handlePostSurvey = async () => {
     if (!newSurveyQ.trim()) return;
@@ -190,12 +205,19 @@ export default function QAPage() {
             </div>
             {expanded === p.id && (
               <div style={{ marginTop:12, borderTop:"1px solid #c8e6d0", paddingTop:12 }}>
-                {(answers[p.id] || []).map((a, i) => (
-                  <div key={i} style={{ background:"#e8f5ec", borderRadius:10, padding:"10px 12px", marginBottom:8 }}>
-                    <div style={{ fontSize:12, color:"#5a7a65", marginBottom:4 }}>{anonEmoji(a.seed)} {anonName(a.seed)}（匿名）</div>
-                    <div style={{ fontSize:13, color:"#2d4a38", lineHeight:1.7 }}>{a.text}</div>
-                  </div>
-                ))}
+                {(answers[p.id] || []).map((a) => {
+                  const isLiked = uid ? (a.likedBy?.includes(uid) ?? false) : false;
+                  return (
+                    <div key={a.id} style={{ background:"#e8f5ec", borderRadius:10, padding:"10px 12px", marginBottom:8 }}>
+                      <div style={{ fontSize:12, color:"#5a7a65", marginBottom:4 }}>{anonEmoji(a.seed)} {anonName(a.seed)}（匿名）</div>
+                      <div style={{ fontSize:13, color:"#2d4a38", lineHeight:1.7, marginBottom:8 }}>{a.text}</div>
+                      <button onClick={() => handleAnswerLike(p.id, a)}
+                        style={{ background:isLiked?"#fde8d8":"#fff", color:isLiked?"#e8a87c":"#8aaa95", border:"none", borderRadius:20, padding:"4px 10px", fontSize:12, cursor:"pointer", fontWeight:600 }}>
+                        {isLiked ? "❤️" : "🤍"} {a.likes || 0}
+                      </button>
+                    </div>
+                  );
+                })}
                 {isPremium ? (
                   <>
                     <textarea placeholder="回答を書く…（匿名で投稿されます）"
@@ -232,11 +254,9 @@ export default function QAPage() {
             </div>
           )}
         </div>
-
         {surveys.length === 0 && (
           <div style={{ textAlign:"center", padding:40, color:"#8aaa95", fontSize:13 }}>まだアンケートがありません。</div>
         )}
-
         {surveys.map(s => {
           const total = s.votes.reduce((a, b) => a + b, 0);
           const voted = votedSurveys[s.id];

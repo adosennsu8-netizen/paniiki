@@ -3,21 +3,20 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 
 const ANON_ANIMALS = ["ことりさん","うさぎさん","たぬきさん","きつねさん","くまさん","ねこさん","いぬさん","りすさん","ぱんださん","かえるさん","ちょうさん","はちどりさん"];
 const ANON_EMOJI = ["🐦","🐰","🦝","🦊","🐻","🐱","🐶","🐿","🐼","🐸","🦋","🐦"];
 const anonName = (seed: number) => ANON_ANIMALS[seed % ANON_ANIMALS.length];
 const anonEmoji = (seed: number) => ANON_EMOJI[seed % ANON_EMOJI.length];
 
-interface Tip { id: string; title: string; body: string; seed: number; likes: number; }
+interface Tip { id: string; title: string; body: string; seed: number; likes: number; likedBy?: string[]; }
 
 export default function TipsPage() {
   const router = useRouter();
   const [uid, setUid] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
@@ -28,7 +27,6 @@ export default function TipsPage() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
-      const snap = await getDoc(doc(db, "users", user.uid));
       setIsPremium(true);
       await loadTips();
     });
@@ -49,7 +47,7 @@ export default function TipsPage() {
     try {
       await addDoc(collection(db, "tips"), {
         title: newTitle.trim(), body: newBody.trim(),
-        seed, uid, likes: 0, createdAt: serverTimestamp(),
+        seed, uid, likes: 0, likedBy: [], createdAt: serverTimestamp(),
       });
       await loadTips();
       setShowNew(false);
@@ -58,10 +56,21 @@ export default function TipsPage() {
   };
 
   const handleLike = async (tip: Tip) => {
-    if (liked[tip.id]) return;
-    setLiked(l => ({ ...l, [tip.id]: true }));
-    setTips(ts => ts.map(t => t.id === tip.id ? { ...t, likes: t.likes + 1 } : t));
-    await updateDoc(doc(db, "tips", tip.id), { likes: increment(1) });
+    if (!uid) return;
+    const alreadyLiked = tip.likedBy?.includes(uid);
+    // 楽観的更新
+    setTips(ts => ts.map(t => t.id === tip.id ? {
+      ...t,
+      likes: alreadyLiked ? t.likes - 1 : t.likes + 1,
+      likedBy: alreadyLiked
+        ? (t.likedBy || []).filter(id => id !== uid)
+        : [...(t.likedBy || []), uid],
+    } : t));
+    // Firestore更新
+    await updateDoc(doc(db, "tips", tip.id), {
+      likes: increment(alreadyLiked ? -1 : 1),
+      likedBy: alreadyLiked ? arrayRemove(uid) : arrayUnion(uid),
+    });
   };
 
   return (
@@ -89,20 +98,23 @@ export default function TipsPage() {
         )}
       </div>
 
-      {tips.map(t => (
-        <div key={t.id} style={{ margin:"0 16px 12px", background:"#fff", borderRadius:16, padding:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-            <span style={{ fontSize:22 }}>{anonEmoji(t.seed)}</span>
-            <div style={{ fontSize:12, color:"#5a7a65" }}>{anonName(t.seed)}（匿名）</div>
+      {tips.map(t => {
+        const isLiked = uid ? (t.likedBy?.includes(uid) ?? false) : false;
+        return (
+          <div key={t.id} style={{ margin:"0 16px 12px", background:"#fff", borderRadius:16, padding:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+              <span style={{ fontSize:22 }}>{anonEmoji(t.seed)}</span>
+              <div style={{ fontSize:12, color:"#5a7a65" }}>{anonName(t.seed)}（匿名）</div>
+            </div>
+            <div style={{ fontWeight:700, fontSize:15, color:"#2d4a38", marginBottom:8 }}>{t.title}</div>
+            <p style={{ fontSize:13, color:"#5a7a65", margin:"0 0 12px", lineHeight:1.8, background:"#e8f5ec", borderRadius:10, padding:"10px 14px" }}>{t.body}</p>
+            <button onClick={() => handleLike(t)}
+              style={{ background:isLiked?"#fde8d8":"#e8f5ec", color:isLiked?"#e8a87c":"#5a7a65", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+              {isLiked ? "❤️" : "🤍"} {t.likes}
+            </button>
           </div>
-          <div style={{ fontWeight:700, fontSize:15, color:"#2d4a38", marginBottom:8 }}>{t.title}</div>
-          <p style={{ fontSize:13, color:"#5a7a65", margin:"0 0 12px", lineHeight:1.8, background:"#e8f5ec", borderRadius:10, padding:"10px 14px" }}>{t.body}</p>
-          <button onClick={() => handleLike(t)}
-            style={{ background:liked[t.id]?"#fde8d8":"#e8f5ec", color:liked[t.id]?"#e8a87c":"#5a7a65", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer", fontWeight:600 }}>
-            {liked[t.id] ? "❤️" : "🤍"} {t.likes}
-          </button>
-        </div>
-      ))}
+        );
+      })}
 
       {tips.length === 0 && (
         <div style={{ textAlign:"center", padding:40, color:"#8aaa95", fontSize:13 }}>
