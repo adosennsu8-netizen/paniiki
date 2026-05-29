@@ -201,8 +201,8 @@ export default function DMChatPage() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="メッセージを入力…"
-          rows={1}
-          style={{ flex:1, resize:"none", borderRadius:20, border:"1px solid #c8e6d0", padding:"10px 14px", fontSize:14, outline:"none", background:"#f0f7f2", maxHeight:120, overflowY:"auto", lineHeight:1.5, fontFamily:"inherit" }}
+          rows={3}
+          style={{ flex:1, resize:"none", borderRadius:16, border:"1px solid #c8e6d0", padding:"10px 14px", fontSize:14, outline:"none", background:"#f0f7f2", maxHeight:160, overflowY:"auto", lineHeight:1.6, fontFamily:"inherit", color:"#2d4a38", WebkitTextFillColor:"#2d4a38" }}
         />
         <button
           onClick={sendMessage}
