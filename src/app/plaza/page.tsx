@@ -230,7 +230,7 @@ export default function PlazaPage() {
 
       <div style={{ padding:"12px 16px 24px", background:"#fff", borderTop:"1px solid #c8e6d0", display:"flex", gap:8, alignItems:"flex-end", flexShrink:0 }}>
         <textarea value={text} onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} }}
+          onKeyDown={e => { if(e.key==="Enter"&&e.shiftKey){e.preventDefault();handleSend();} }}
           placeholder="メッセージを入力…"
           rows={3}
           style={{ flex:1, border:"1.5px solid #c8e6d0", borderRadius:16, padding:"10px 16px", fontSize:14, background:"#e8f5ec", outline:"none", resize:"none", lineHeight:1.6, fontFamily:"inherit", color:"#2d4a38", WebkitTextFillColor:"#2d4a38", maxHeight:160, overflowY:"auto" }}></textarea>
