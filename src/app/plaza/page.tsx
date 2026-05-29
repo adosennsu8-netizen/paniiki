@@ -5,7 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection, addDoc, query, orderBy, limit, onSnapshot,
-  serverTimestamp, doc, getDoc, getDocs, where,
+  serverTimestamp, doc, getDoc, getDocs, where, deleteDoc,
 } from "firebase/firestore";
 
 const ANIMALS = ["🐶","🐱","🐻","🐼","🦊","🐨","🐯","🦁","🐮","🐷","🐸","🐙","🦋","🐬","🦒","🦘","🦔","🐧","🦅","🐳"];
@@ -123,6 +123,13 @@ export default function PlazaPage() {
     } catch(e) { console.error(e); } finally { setFriendLoading(false); }
   };
 
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!confirm("このメッセージを削除しますか？")) return;
+    try {
+      await deleteDoc(doc(db, "chatMessages", msgId));
+    } catch(e) { console.error(e); }
+  };
+
   const handleSend = async () => {
     if (!text.trim() || !uid) return;
     setLoading(true);
@@ -195,7 +202,15 @@ export default function PlazaPage() {
                   style={{ background:isMe?"linear-gradient(135deg,#5ba872,#7bbf8c)":"#fff", color:isMe?"#fff":"#2d4a38", borderRadius: m.replyTo?(isMe?"0 16px 4px 16px":"0 16px 16px 4px"):(isMe?"16px 16px 4px 16px":"16px 16px 16px 4px"), padding:"10px 14px", fontSize:14, lineHeight:1.6, boxShadow:"0 2px 8px rgba(0,0,0,0.08)", cursor: isMe?"default":"pointer" }}>
                   {m.text}
                 </div>
-                <div style={{ fontSize:10, color:"#8aaa95", marginTop:3, textAlign:isMe?"right":"left", paddingLeft:4, paddingRight:4 }}>{formatTime(m.createdAt)}</div>
+                <div style={{ fontSize:10, color:"#8aaa95", marginTop:3, textAlign:isMe?"right":"left", paddingLeft:4, paddingRight:4, display:"flex", justifyContent:isMe?"flex-end":"flex-start", alignItems:"center", gap:8 }}>
+                  <span>{formatTime(m.createdAt)}</span>
+                  {isMe && (
+                    <button onClick={() => handleDeleteMessage(m.id)}
+                      style={{ background:"none", border:"none", fontSize:10, color:"#c8a0a0", cursor:"pointer", padding:0 }}>
+                      削除
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
