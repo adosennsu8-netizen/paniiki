@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, getCountFromServer } from "firebase/firestore";
+import { onAuthStateChanged, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { collection, getCountFromServer, doc, deleteDoc, getDocs, query, where } from "firebase/firestore";
 
 const ADMIN_UID = "tYMe5rMBWRbPk8etZl1NbQSwARs1";
 
@@ -22,10 +22,16 @@ const HELP_ITEMS = [
 export default function HelpPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [uid, setUid] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user?.uid === ADMIN_UID) {
+      if (!user) return;
+      setUid(user.uid);
+      if (user.uid === ADMIN_UID) {
         setIsAdmin(true);
         try {
           const snap = await getCountFromServer(collection(db, "users"));
@@ -37,6 +43,34 @@ export default function HelpPage() {
     });
     return () => unsub();
   }, []);
+
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser || !uid) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      // calEvents削除
+      const calQ = query(collection(db, "calEvents"), where("uid", "==", uid));
+      const calSnap = await getDocs(calQ);
+      for (const d of calSnap.docs) {
+        await deleteDoc(doc(db, "calEvents", d.id));
+      }
+      // mapUsers削除
+      await deleteDoc(doc(db, "mapUsers", uid));
+      // users削除
+      await deleteDoc(doc(db, "users", uid));
+      // Firebase Auth削除
+      await deleteUser(auth.currentUser);
+      window.location.replace("/auth");
+    } catch (e: any) {
+      if (e.code === "auth/requires-recent-login") {
+        setDeleteError("セキュリティのため、一度ログアウトして再ログイン後にお試しください。");
+      } else {
+        setDeleteError("エラーが発生しました。時間をおいて再度お試しください。");
+      }
+      setDeleting(false);
+    }
+  };
 
   return (
     <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN','BIZ UDPGothic',sans-serif" }}>
@@ -98,6 +132,23 @@ export default function HelpPage() {
           </div>
         </div>
 
+        {/* 退会セクション */}
+        <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginTop:10, border:"1px solid #f5c6c6" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#c0392b", marginBottom:8 }}>🚪 退会する</div>
+          <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.8, marginBottom:12 }}>
+            退会すると以下のデータが削除されます。この操作は取り消せません。<br/>
+            ・アカウント情報<br/>
+            ・カレンダーの記録<br/>
+            ・マップ情報<br/>
+            ※匿名の投稿（質問箱・広場など）は残ります。
+          </div>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ width:"100%", background:"#fff0f0", color:"#c0392b", border:"1.5px solid #f5c6c6", borderRadius:12, padding:"12px", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+            退会手続きへ
+          </button>
+        </div>
+
         <div style={{ background:"#e8f5ec", borderRadius:16, padding:"16px", marginTop:10, border:"1px solid #c8e6d0" }}>
           <div style={{ fontSize:11, color:"#8aaa95", lineHeight:2.0, display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
             <div>
@@ -113,6 +164,35 @@ export default function HelpPage() {
           </div>
         </div>
       </div>
+
+      {/* 退会確認モーダル */}
+      {showDeleteConfirm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
+            <div style={{ fontSize:18, fontWeight:800, color:"#c0392b", marginBottom:8, textAlign:"center" }}>⚠️ 本当に退会しますか？</div>
+            <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8, marginBottom:16, textAlign:"center" }}>
+              アカウントと個人データが完全に削除されます。<br/>この操作は取り消せません。
+            </div>
+            {deleteError && (
+              <div style={{ background:"#fff0f0", border:"1px solid #f5c6c6", borderRadius:10, padding:"10px 14px", fontSize:12, color:"#c0392b", marginBottom:12 }}>
+                {deleteError}
+              </div>
+            )}
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              style={{ width:"100%", background:deleting?"#ccc":"#e74c3c", color:"#fff", border:"none", borderRadius:12, padding:"14px", fontSize:15, fontWeight:700, cursor:deleting?"not-allowed":"pointer", marginBottom:10 }}>
+              {deleting ? "削除中…" : "退会して全データを削除する"}
+            </button>
+            <button
+              onClick={() => { setShowDeleteConfirm(false); setDeleteError(""); }}
+              disabled={deleting}
+              style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"14px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

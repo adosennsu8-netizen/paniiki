@@ -1,193 +1,344 @@
 "use client";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import { collection, getCountFromServer, doc, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 
-const ADMIN_UID = "tYMe5rMBWRbPk8etZl1NbQSwARs1";
+const ANON_ANIMALS = ["ことりさん","うさぎさん","たぬきさん","きつねさん","くまさん","ねこさん","いぬさん","りすさん","ぱんださん","かえるさん","ちょうさん","はちどりさん"];
+const ANON_EMOJI = ["🐦","🐰","🦝","🦊","🐻","🐱","🐶","🐿","🐼","🐸","🦋","🐦"];
+const anonName = (seed: number) => ANON_ANIMALS[seed % ANON_ANIMALS.length];
+const anonEmoji = (seed: number) => ANON_EMOJI[seed % ANON_EMOJI.length];
 
-const HELP_ITEMS = [
-  { icon:"🗺", title:"MAPの使い方", desc:"近くの仲間を確認する方法", path:"/help/map" },
-  { icon:"📅", title:"カレンダーの使い方", desc:"発作・受診・体調を記録する方法", path:"/help/calendar" },
-  { icon:"💊", title:"薬管理の使い方", desc:"飲み忘れ防止アラームの設定方法", path:"/help/medicine" },
-  { icon:"❓", title:"質問箱の使い方", desc:"仲間に相談・回答する方法", path:"/help/qa" },
-  { icon:"💡", title:"豆知識の使い方", desc:"経験や知識を投稿する方法", path:"/help/tips" },
-  { icon:"🆘", title:"発作サポートの使い方", desc:"呼吸アシスト・そっとしておいてカード", path:"/help/sos" },
-  { icon:"📵", title:"偽電話の使い方", desc:"その場を自然に離れる方法", path:"/help/fake-call" },
-  { icon:"📍", title:"場所情報の使い方", desc:"クリニック・休める場所を探す方法", path:"/help/places" },
-  { icon:"⭐", title:"プレミアムプランについて", desc:"有料機能と料金について", path:"/help/premium" },
-];
+interface Post { id: string; q: string; tags: string[]; seed: number; time: string; answers: number; }
+interface Answer { id: string; text: string; seed: number; likes: number; likedBy?: string[]; }
+interface Survey { id: string; q: string; options: string[]; votes: number[]; seed: number; }
 
-export default function HelpPage() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userCount, setUserCount] = useState<number | null>(null);
+export default function QAPage() {
+  const router = useRouter();
   const [uid, setUid] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
+  const [view, setView] = useState<"qa"|"survey">("qa");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, Answer[]>>({});
+  const [answerText, setAnswerText] = useState<Record<string, string>>({});
+  const [showNew, setShowNew] = useState(false);
+  const [showNewSurvey, setShowNewSurvey] = useState(false);
+  const [newQ, setNewQ] = useState("");
+  const [newTags, setNewTags] = useState("");
+  const [newSurveyQ, setNewSurveyQ] = useState("");
+  const [newSurveyOpts, setNewSurveyOpts] = useState(["","","",""]);
+  const [votedSurveys, setVotedSurveys] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+  const [seed] = useState(Math.floor(Math.random() * 12));
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
+      if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
-      if (user.uid === ADMIN_UID) {
-        setIsAdmin(true);
-        try {
-          const snap = await getCountFromServer(collection(db, "users"));
-          setUserCount(snap.data().count);
-        } catch (e) {
-          console.error(e);
-        }
-      }
+      setIsPremium(true);
+      await loadPosts();
+      await loadSurveys();
     });
     return () => unsub();
   }, []);
 
-  const handleDeleteAccount = async () => {
-    if (!auth.currentUser || !uid) return;
-    setDeleting(true);
-    setDeleteError("");
+  const loadPosts = async () => {
+    const q = query(collection(db, "qaPosts"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    const list: Post[] = [];
+    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Post));
+    setPosts(list);
+  };
+
+  const loadSurveys = async () => {
+    const q = query(collection(db, "surveys"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    const list: Survey[] = [];
+    snap.forEach(d => list.push({ id: d.id, ...d.data() } as Survey));
+    setSurveys(list);
+  };
+
+  const loadAnswers = async (postId: string) => {
+    const q = query(collection(db, "qaPosts", postId, "answers"), orderBy("createdAt", "asc"));
+    const snap = await getDocs(q);
+    const list: Answer[] = [];
+    snap.forEach(d => list.push({ id: d.id, likes: 0, ...d.data() } as Answer));
+    setAnswers(a => ({ ...a, [postId]: list }));
+  };
+
+  const handleExpand = async (postId: string) => {
+    if (expanded === postId) { setExpanded(null); return; }
+    setExpanded(postId);
+    await loadAnswers(postId);
+  };
+
+  const handlePost = async () => {
+    if (!newQ.trim() || !uid) return;
+    setLoading(true);
     try {
-      // calEvents削除
-      const calQ = query(collection(db, "calEvents"), where("uid", "==", uid));
-      const calSnap = await getDocs(calQ);
-      for (const d of calSnap.docs) {
-        await deleteDoc(doc(db, "calEvents", d.id));
-      }
-      // mapUsers削除
-      await deleteDoc(doc(db, "mapUsers", uid));
-      // users削除
-      await deleteDoc(doc(db, "users", uid));
-      // Firebase Auth削除
-      await deleteUser(auth.currentUser);
-      window.location.replace("/auth");
-    } catch (e: any) {
-      if (e.code === "auth/requires-recent-login") {
-        setDeleteError("セキュリティのため、一度ログアウトして再ログイン後にお試しください。");
-      } else {
-        setDeleteError("エラーが発生しました。時間をおいて再度お試しください。");
-      }
-      setDeleting(false);
+      await addDoc(collection(db, "qaPosts"), {
+        q: newQ.trim(),
+        tags: newTags.split(/[,、]/).map(t => t.trim()).filter(Boolean),
+        seed, uid, answers: 0, createdAt: serverTimestamp(),
+      });
+      await loadPosts();
+      setShowNew(false);
+      setNewQ(""); setNewTags("");
+    } finally { setLoading(false); }
+  };
+
+  const handleAnswer = async (postId: string) => {
+    const text = answerText[postId]?.trim();
+    if (!text || !uid) return;
+    if (submitting[postId]) return; // 連打防止
+    setSubmitting(s => ({ ...s, [postId]: true }));
+    try {
+      await addDoc(collection(db, "qaPosts", postId, "answers"), {
+        text, seed, uid, likes: 0, likedBy: [], createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "qaPosts", postId), { answers: increment(1) });
+      setAnswerText(a => ({ ...a, [postId]: "" }));
+      await loadAnswers(postId);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, answers: (p.answers ?? 0) + 1 } : p));
+    } finally {
+      setSubmitting(s => ({ ...s, [postId]: false }));
     }
   };
 
+  const handleAnswerLike = async (postId: string, answer: Answer) => {
+    if (!uid) return;
+    const alreadyLiked = answer.likedBy?.includes(uid);
+    setAnswers(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || []).map(a => a.id === answer.id ? {
+        ...a,
+        likes: alreadyLiked ? a.likes - 1 : a.likes + 1,
+        likedBy: alreadyLiked
+          ? (a.likedBy || []).filter(id => id !== uid)
+          : [...(a.likedBy || []), uid],
+      } : a),
+    }));
+    await updateDoc(doc(db, "qaPosts", postId, "answers", answer.id), {
+      likes: increment(alreadyLiked ? -1 : 1),
+      likedBy: alreadyLiked ? arrayRemove(uid) : arrayUnion(uid),
+    });
+  };
+
+  const handlePostSurvey = async () => {
+    if (!newSurveyQ.trim()) return;
+    const opts = newSurveyOpts.filter(o => o.trim());
+    if (opts.length < 2) { alert("選択肢を2つ以上入力してください"); return; }
+    setLoading(true);
+    try {
+      await addDoc(collection(db, "surveys"), {
+        q: newSurveyQ.trim(), options: opts,
+        votes: opts.map(() => 0), seed, uid, createdAt: serverTimestamp(),
+      });
+      await loadSurveys();
+      setShowNewSurvey(false);
+      setNewSurveyQ(""); setNewSurveyOpts(["","","",""]);
+    } finally { setLoading(false); }
+  };
+
+  const handleVote = async (survey: Survey, optIndex: number) => {
+    if (votedSurveys[survey.id] !== undefined) return;
+    setVotedSurveys(v => ({ ...v, [survey.id]: optIndex }));
+    const newVotes = survey.votes.map((v, i) => i === optIndex ? v + 1 : v);
+    setSurveys(s => s.map(sv => sv.id === survey.id ? { ...sv, votes: newVotes } : sv));
+    await updateDoc(doc(db, "surveys", survey.id), { votes: newVotes });
+  };
+
   return (
-    <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN','BIZ UDPGothic',sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"#f0f7f2", fontFamily:"'Hiragino Maru Gothic ProN',sans-serif", paddingBottom:80 }}>
       <div style={{ background:"linear-gradient(135deg,#5ba872,#7bbf8c)", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 12px rgba(91,168,114,0.25)" }}>
         <div>
-          <div style={{ color:"#fff", fontSize:20, fontWeight:800 }}>❓ ヘルプ・使い方</div>
-          <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9 }}>ぱにいき</div>
+          <div style={{ color:"#fff", fontSize:20, fontWeight:800 }}>❓ 質問箱</div>
+          <div style={{ color:"rgba(255,255,255,0.75)", fontSize:9 }}>ぱにいき — 完全匿名</div>
         </div>
-        <Link href="/" style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, textDecoration:"none" }}>← 戻る</Link>
+        <button onClick={() => router.push("/")} style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:20, padding:"6px 14px", fontSize:13, cursor:"pointer" }}>← 戻る</button>
       </div>
 
-      <div style={{ padding:"16px 16px 80px" }}>
-        <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:16, border:"1px solid #c8e6d0" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:8 }}>📲 まずはホーム画面に追加しよう</div>
-          <div style={{ fontSize:12, color:"#5a7a65", lineHeight:2.0 }}>
-            ぱにいきはホーム画面に追加してアプリとして使えます。<br/>
-            <br/>
-            <strong>iPhoneの場合</strong><br/>
-            Safari で開く → 下の共有ボタン（□↑）をタップ →「ホーム画面に追加」をタップ<br/>
-            <br/>
-            <strong>Androidの場合</strong><br/>
-            Chrome で開く → 右上の「⋮」をタップ →「ホーム画面に追加」をタップ<br/>
-            <br/>
-            <strong>PCの場合</strong><br/>
-            Chrome のアドレスバー右側の「⊕」アイコンをクリック → インストール
-          </div>
-        </div>
-        <div style={{ background:"#fff8e1", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #ffe082" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#b07800", marginBottom:4 }}>⚠️ アプリが開かない場合</div>
-          <div style={{ fontSize:12, color:"#7a5800", lineHeight:1.8 }}>
-            ブラウザの「サイトの設定」→「データを削除」を行ってから再度アクセスしてください。それでも解決しない場合は、シークレットモード（プライベートブラウジング）でお試しください。
-          </div>
-        </div>
-        <div style={{ background:"#fff", borderRadius:16, padding:"14px 16px", marginBottom:16, border:"1px solid #c8e6d0" }}>
-          <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8 }}>
-            各機能の使い方は下のメニューからご確認ください。
-          </div>
-        </div>
-        {HELP_ITEMS.map(item => (
-          <Link key={item.path} href={item.path} style={{ textDecoration:"none" }}>
-            <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)", border:"1px solid #c8e6d0", display:"flex", alignItems:"center", gap:14 }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:"#e8f5ec", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
-                {item.icon}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:15, fontWeight:700, color:"#2d4a38", marginBottom:3 }}>{item.title}</div>
-                <div style={{ fontSize:12, color:"#8aaa95" }}>{item.desc}</div>
-              </div>
-              <div style={{ color:"#c8e6d0", fontSize:20 }}>›</div>
-            </div>
-          </Link>
-        ))}
-
-        <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginTop:8, border:"1px solid #c8e6d0" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#2d4a38", marginBottom:8 }}>📩 解決しない場合</div>
-          <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.8 }}>
-            お問い合わせは下記メールアドレスよりご連絡ください。<br/>
-            <a href="https://www.joynovation.com" target="_blank" style={{ color:"#5ba872" }}>www.joynovation.com</a>
-          </div>
-        </div>
-
-        {/* 退会セクション */}
-        <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginTop:10, border:"1px solid #f5c6c6" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#c0392b", marginBottom:8 }}>🚪 退会する</div>
-          <div style={{ fontSize:12, color:"#5a7a65", lineHeight:1.8, marginBottom:12 }}>
-            退会すると以下のデータが削除されます。この操作は取り消せません。<br/>
-            ・アカウント情報<br/>
-            ・カレンダーの記録<br/>
-            ・マップ情報<br/>
-            ※匿名の投稿（質問箱・広場など）は残ります。
-          </div>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            style={{ width:"100%", background:"#fff0f0", color:"#c0392b", border:"1.5px solid #f5c6c6", borderRadius:12, padding:"12px", fontSize:14, fontWeight:600, cursor:"pointer" }}>
-            退会手続きへ
+      <div style={{ display:"flex", gap:8, padding:"12px 16px 0" }}>
+        {[["qa","❓ 質問箱"],["survey","📊 アンケート"]].map(([k,l]) => (
+          <button key={k} onClick={() => setView(k as "qa"|"survey")}
+            style={{ flex:1, background:view===k?"#5ba872":"#e8f5ec", color:view===k?"#fff":"#5a7a65", border:"none", borderRadius:10, padding:"10px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+            {l}
           </button>
+        ))}
+      </div>
+
+      {view==="qa" && <>
+        <div style={{ padding:"12px 16px 0" }}>
+          <div style={{ fontSize:11, color:"#8aaa95", marginBottom:8 }}>🔒 すべての投稿・回答は完全匿名で表示されます</div>
+          {isPremium ? (
+            <button onClick={() => setShowNew(true)}
+              style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"12px", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+              ✏️ 質問を投稿する
+            </button>
+          ) : (
+            <div style={{ background:"#fef3cd", borderRadius:12, padding:"12px 16px", border:"1.5px solid #c9963a", textAlign:"center" }}>
+              <div style={{ fontSize:13, color:"#c9963a", fontWeight:600 }}>⭐ 質問の投稿はプレミアム機能です</div>
+              <div style={{ fontSize:11, color:"#5a7a65", marginTop:4 }}>閲覧・回答の閲覧は無料でできます</div>
+            </div>
+          )}
         </div>
 
-        <div style={{ background:"#e8f5ec", borderRadius:16, padding:"16px", marginTop:10, border:"1px solid #c8e6d0" }}>
-          <div style={{ fontSize:11, color:"#8aaa95", lineHeight:2.0, display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
-            <div>
-              運営会社：Joynovation（ジョイノベーション）<br/>
-              所在地：福岡県福岡市<br/>
-              Webサイト：<a href="https://www.joynovation.com" target="_blank" style={{ color:"#5ba872" }}>www.joynovation.com</a>
+        {posts.map(p => (
+          <div key={p.id} style={{ margin:"12px 16px 0", background:"#fff", borderRadius:16, padding:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+              <span style={{ fontSize:20 }}>{anonEmoji(p.seed)}</span>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:"#5a7a65" }}>{anonName(p.seed)}（匿名）</div>
+                <div style={{ fontSize:10, color:"#8aaa95" }}>{p.time}</div>
+              </div>
             </div>
-            {isAdmin && userCount !== null && (
-              <div style={{ fontSize:11, color:"#c8e6d0", fontWeight:700, marginLeft:8, flexShrink:0 }}>
-                {userCount}
+            <p style={{ fontSize:14, color:"#2d4a38", margin:"0 0 8px", lineHeight:1.7 }}>{p.q}</p>
+            <div style={{ display:"flex", gap:6, alignItems:"center", justifyContent:"space-between" }}>
+              <div>{p.tags?.map(t => (
+                <span key={t} style={{ display:"inline-block", background:"#d4edda", color:"#4a9060", borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:600, margin:"2px" }}>{t}</span>
+              ))}</div>
+              <button onClick={() => handleExpand(p.id)}
+                style={{ background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:8, padding:"4px 12px", fontSize:12, cursor:"pointer" }}>
+                💬 {(answers[p.id]?.length ?? p.answers)}件
+              </button>
+            </div>
+            {expanded === p.id && (
+              <div style={{ marginTop:12, borderTop:"1px solid #c8e6d0", paddingTop:12 }}>
+                {(answers[p.id] || []).map((a) => {
+                  const isLiked = uid ? (a.likedBy?.includes(uid) ?? false) : false;
+                  return (
+                    <div key={a.id} style={{ background:"#e8f5ec", borderRadius:10, padding:"10px 12px", marginBottom:8 }}>
+                      <div style={{ fontSize:12, color:"#5a7a65", marginBottom:4 }}>{anonEmoji(a.seed)} {anonName(a.seed)}（匿名）</div>
+                      <div style={{ fontSize:13, color:"#2d4a38", lineHeight:1.7, marginBottom:8 }}>{a.text}</div>
+                      <button onClick={() => handleAnswerLike(p.id, a)}
+                        style={{ background:isLiked?"#fde8d8":"#fff", color:isLiked?"#e8a87c":"#8aaa95", border:"none", borderRadius:20, padding:"4px 10px", fontSize:12, cursor:"pointer", fontWeight:600 }}>
+                        {isLiked ? "❤️" : "🤍"} {a.likes || 0}
+                      </button>
+                    </div>
+                  );
+                })}
+                {isPremium ? (
+                  <>
+                    <textarea placeholder="回答を書く…（匿名で投稿されます）"
+                      value={answerText[p.id] || ""}
+                      onChange={e => setAnswerText(a => ({ ...a, [p.id]: e.target.value }))}
+                      style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", height:70, resize:"none", marginBottom:8, fontFamily:"inherit" }}/>
+                    <button
+                      onClick={() => handleAnswer(p.id)}
+                      disabled={submitting[p.id]}
+                      style={{ width:"100%", background:submitting[p.id]?"#aacfb5":"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"10px", fontSize:14, fontWeight:600, cursor:submitting[p.id]?"not-allowed":"pointer" }}>
+                      {submitting[p.id] ? "送信中…" : "回答を送る"}
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ background:"#fef3cd", borderRadius:10, padding:"10px 14px", textAlign:"center" }}>
+                    <div style={{ fontSize:12, color:"#c9963a", fontWeight:600 }}>⭐ 回答はプレミアム機能です</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
-      </div>
+        ))}
+      </>}
 
-      {/* 退会確認モーダル */}
-      {showDeleteConfirm && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
-            <div style={{ fontSize:18, fontWeight:800, color:"#c0392b", marginBottom:8, textAlign:"center" }}>⚠️ 本当に退会しますか？</div>
-            <div style={{ fontSize:13, color:"#5a7a65", lineHeight:1.8, marginBottom:16, textAlign:"center" }}>
-              アカウントと個人データが完全に削除されます。<br/>この操作は取り消せません。
-            </div>
-            {deleteError && (
-              <div style={{ background:"#fff0f0", border:"1px solid #f5c6c6", borderRadius:10, padding:"10px 14px", fontSize:12, color:"#c0392b", marginBottom:12 }}>
-                {deleteError}
-              </div>
-            )}
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deleting}
-              style={{ width:"100%", background:deleting?"#ccc":"#e74c3c", color:"#fff", border:"none", borderRadius:12, padding:"14px", fontSize:15, fontWeight:700, cursor:deleting?"not-allowed":"pointer", marginBottom:10 }}>
-              {deleting ? "削除中…" : "退会して全データを削除する"}
+      {view==="survey" && <>
+        <div style={{ padding:"12px 16px 0" }}>
+          {isPremium ? (
+            <button onClick={() => setShowNewSurvey(true)}
+              style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"12px", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+              📊 アンケートを作成する
             </button>
-            <button
-              onClick={() => { setShowDeleteConfirm(false); setDeleteError(""); }}
-              disabled={deleting}
-              style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"14px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+          ) : (
+            <div style={{ background:"#fef3cd", borderRadius:12, padding:"12px 16px", border:"1.5px solid #c9963a", textAlign:"center" }}>
+              <div style={{ fontSize:13, color:"#c9963a", fontWeight:600 }}>⭐ アンケート作成はプレミアム機能です</div>
+              <div style={{ fontSize:11, color:"#5a7a65", marginTop:4 }}>回答・閲覧は無料でできます</div>
+            </div>
+          )}
+        </div>
+        {surveys.length === 0 && (
+          <div style={{ textAlign:"center", padding:40, color:"#8aaa95", fontSize:13 }}>まだアンケートがありません。</div>
+        )}
+        {surveys.map(s => {
+          const total = s.votes.reduce((a, b) => a + b, 0);
+          const voted = votedSurveys[s.id];
+          return (
+            <div key={s.id} style={{ margin:"12px 16px 0", background:"#fff", borderRadius:16, padding:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", border:"1px solid #c8e6d0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                <span style={{ fontSize:18 }}>{anonEmoji(s.seed)}</span>
+                <div style={{ fontSize:12, color:"#5a7a65" }}>{anonName(s.seed)}（匿名）</div>
+              </div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#2d4a38", marginBottom:12 }}>📊 {s.q}</div>
+              {s.options.map((opt, i) => {
+                const pct = total > 0 ? Math.round(s.votes[i] / total * 100) : 0;
+                const isVoted = voted === i;
+                return (
+                  <div key={i} style={{ marginBottom:10 }}>
+                    <button onClick={() => handleVote(s, i)}
+                      style={{ width:"100%", background:isVoted?"#d4edda":"#e8f5ec", border:isVoted?"1.5px solid #5ba872":"1.5px solid #c8e6d0", borderRadius:10, padding:"8px 12px", cursor:voted!==undefined?"not-allowed":"pointer", textAlign:"left", marginBottom:4 }}>
+                      <span style={{ fontSize:13, color:"#2d4a38" }}>{opt}</span>
+                      {isVoted && <span style={{ float:"right", fontSize:12, color:"#5ba872", fontWeight:700 }}>✓</span>}
+                    </button>
+                    {voted !== undefined && (
+                      <div>
+                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#5a7a65", marginBottom:2 }}>
+                          <span>{opt}</span><span>{pct}%</span>
+                        </div>
+                        <div style={{ background:"#e8f5ec", borderRadius:20, height:8, overflow:"hidden" }}>
+                          <div style={{ width:`${pct}%`, height:"100%", background:"linear-gradient(90deg,#5ba872,#7bbf8c)", borderRadius:20, transition:"width 0.6s" }}/>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ fontSize:11, color:"#8aaa95", textAlign:"right", marginTop:4 }}>総回答数: {total}人</div>
+            </div>
+          );
+        })}
+      </>}
+
+      {showNew && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
+            <div style={{ fontWeight:700, fontSize:16, color:"#2d4a38", marginBottom:8 }}>❓ 質問を投稿する</div>
+            <div style={{ fontSize:11, color:"#8aaa95", marginBottom:12 }}>🔒 匿名で投稿されます</div>
+            <textarea placeholder="みんなに聞きたいことを書いてください…" value={newQ} onChange={e => setNewQ(e.target.value)}
+              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", height:100, resize:"none", marginBottom:10, fontFamily:"inherit" }}/>
+            <input placeholder="タグ（例：電車、薬）" value={newTags} onChange={e => setNewTags(e.target.value)}
+              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:12 }}/>
+            <button onClick={handlePost} disabled={loading}
+              style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
+              {loading ? "投稿中…" : "投稿する"}
+            </button>
+            <button onClick={() => setShowNew(false)}
+              style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showNewSurvey && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
+            <div style={{ fontWeight:700, fontSize:16, color:"#2d4a38", marginBottom:12 }}>📊 アンケートを作成する</div>
+            <input placeholder="質問文を入力" value={newSurveyQ} onChange={e => setNewSurveyQ(e.target.value)}
+              style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:10 }}/>
+            <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>選択肢（最大4つ）</div>
+            {newSurveyOpts.map((opt, i) => (
+              <input key={i} placeholder={`選択肢 ${i+1}`} value={opt} onChange={e => setNewSurveyOpts(o => o.map((v, j) => j===i ? e.target.value : v))}
+                style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", marginBottom:8 }}/>
+            ))}
+            <button onClick={handlePostSurvey} disabled={loading}
+              style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
+              {loading ? "作成中…" : "作成する"}
+            </button>
+            <button onClick={() => setShowNewSurvey(false)}
+              style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               キャンセル
             </button>
           </div>
