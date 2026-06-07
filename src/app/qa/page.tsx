@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 
 const ANON_ANIMALS = ["ことりさん","うさぎさん","たぬきさん","きつねさん","くまさん","ねこさん","いぬさん","りすさん","ぱんださん","かえるさん","ちょうさん","はちどりさん"];
 const ANON_EMOJI = ["🐦","🐰","🦝","🦊","🐻","🐱","🐶","🐿","🐼","🐸","🦋","🐦"];
@@ -32,6 +32,7 @@ export default function QAPage() {
   const [newSurveyOpts, setNewSurveyOpts] = useState(["","","",""]);
   const [votedSurveys, setVotedSurveys] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
   const [seed] = useState(Math.floor(Math.random() * 12));
 
   useEffect(() => {
@@ -93,22 +94,24 @@ export default function QAPage() {
   const handleAnswer = async (postId: string) => {
     const text = answerText[postId]?.trim();
     if (!text || !uid) return;
-    await addDoc(collection(db, "qaPosts", postId, "answers"), {
-      text, seed, uid, likes: 0, likedBy: [], createdAt: serverTimestamp(),
-    });
-    const postRef = doc(db, "qaPosts", postId);
-    const postSnap = await getDoc(postRef);
-    const currentCount = postSnap.data()?.answers ?? 0;
-    await updateDoc(postRef, { answers: currentCount + 1 });
-    setAnswerText(a => ({ ...a, [postId]: "" }));
-    await loadAnswers(postId);
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, answers: (p.answers ?? 0) + 1 } : p));
+    if (submitting[postId]) return; // 連打防止
+    setSubmitting(s => ({ ...s, [postId]: true }));
+    try {
+      await addDoc(collection(db, "qaPosts", postId, "answers"), {
+        text, seed, uid, likes: 0, likedBy: [], createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "qaPosts", postId), { answers: increment(1) });
+      setAnswerText(a => ({ ...a, [postId]: "" }));
+      await loadAnswers(postId);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, answers: (p.answers ?? 0) + 1 } : p));
+    } finally {
+      setSubmitting(s => ({ ...s, [postId]: false }));
+    }
   };
 
   const handleAnswerLike = async (postId: string, answer: Answer) => {
     if (!uid) return;
     const alreadyLiked = answer.likedBy?.includes(uid);
-    // 楽観的更新
     setAnswers(prev => ({
       ...prev,
       [postId]: (prev[postId] || []).map(a => a.id === answer.id ? {
@@ -224,9 +227,11 @@ export default function QAPage() {
                       value={answerText[p.id] || ""}
                       onChange={e => setAnswerText(a => ({ ...a, [p.id]: e.target.value }))}
                       style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", height:70, resize:"none", marginBottom:8, fontFamily:"inherit" }}/>
-                    <button onClick={() => handleAnswer(p.id)}
-                      style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"10px", fontSize:14, fontWeight:600, cursor:"pointer" }}>
-                      回答を送る
+                    <button
+                      onClick={() => handleAnswer(p.id)}
+                      disabled={submitting[p.id]}
+                      style={{ width:"100%", background:submitting[p.id]?"#aacfb5":"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"10px", fontSize:14, fontWeight:600, cursor:submitting[p.id]?"not-allowed":"pointer" }}>
+                      {submitting[p.id] ? "送信中…" : "回答を送る"}
                     </button>
                   </>
                 ) : (
