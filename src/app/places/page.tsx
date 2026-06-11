@@ -248,8 +248,16 @@ export default function PlacesPage() {
 
             {/* 住所入力欄 */}
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>
-                住所 <span style={{ color:"#8aaa95", fontWeight:400 }}>（任意）タップでGoogleマップが開きます</span>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                <div style={{ fontSize:12, color:"#5a7a65", fontWeight:600 }}>
+                  住所 <span style={{ color:"#8aaa95", fontWeight:400 }}>（任意）</span>
+                </div>
+                <button
+                  onClick={() => window.open("https://maps.google.com/", "_blank")}
+                  style={{ background:"#4a9060", color:"#fff", border:"none", borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:600, cursor:"pointer" }}
+                >
+                  🗺️ Googleマップを開く
+                </button>
               </div>
               <input
                 placeholder="例：福岡県福岡市中央区天神1-1-1"
