@@ -10,6 +10,7 @@ interface Place {
   name: string;
   category: string;
   note: string;
+  address?: string;
   lat: number;
   lng: number;
   seed: number;
@@ -52,6 +53,7 @@ export default function PlacesPage() {
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("クリニック");
   const [newNote, setNewNote] = useState("");
+  const [newAddress, setNewAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [seed] = useState(Math.floor(Math.random() * 12));
 
@@ -59,7 +61,7 @@ export default function PlacesPage() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.push("/auth"); return; }
       setUid(user.uid);
-      const snap = await getDoc(doc(db, "users", user.uid));
+      await getDoc(doc(db, "users", user.uid));
       setIsPremium(true);
       getLocation();
       await loadPlaces();
@@ -88,13 +90,27 @@ export default function PlacesPage() {
     setLoading(true);
     try {
       await addDoc(collection(db, "places"), {
-        name: newName.trim(), category: newCategory, note: newNote.trim(),
-        lat: userLat, lng: userLng, seed, uid, createdAt: serverTimestamp(),
+        name: newName.trim(),
+        category: newCategory,
+        note: newNote.trim(),
+        address: newAddress.trim(),
+        lat: userLat,
+        lng: userLng,
+        seed,
+        uid,
+        createdAt: serverTimestamp(),
       });
       await loadPlaces();
       setShowAdd(false);
-      setNewName(""); setNewNote("");
+      setNewName("");
+      setNewNote("");
+      setNewAddress("");
     } finally { setLoading(false); }
+  };
+
+  const openGoogleMaps = (address: string) => {
+    const url = `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+    window.open(url, "_blank");
   };
 
   const placesWithDistance = places.map(p => ({
@@ -174,7 +190,7 @@ export default function PlacesPage() {
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:700, fontSize:14, color:"#2d4a38", marginBottom:2 }}>{p.name}</div>
-                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
                     <span style={{ background:"#d4edda", color:"#4a9060", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:600 }}>{p.category}</span>
                     {p.distance !== undefined && (
                       <span style={{ fontSize:11, color:"#8aaa95" }}>📏 {formatDistance(p.distance)}</span>
@@ -182,6 +198,19 @@ export default function PlacesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* 住所 */}
+              {p.address && (
+                <button
+                  onClick={() => openGoogleMaps(p.address!)}
+                  style={{ display:"flex", alignItems:"center", gap:6, background:"#e8f5ec", border:"1px solid #b8d8c0", borderRadius:10, padding:"8px 12px", marginBottom:8, width:"100%", textAlign:"left", cursor:"pointer" }}
+                >
+                  <span style={{ fontSize:14 }}>🗺️</span>
+                  <span style={{ fontSize:12, color:"#4a9060", fontWeight:600, flex:1 }}>{p.address}</span>
+                  <span style={{ fontSize:10, color:"#8aaa95", flexShrink:0 }}>地図を開く →</span>
+                </button>
+              )}
+
               <div style={{ background:"#e8f5ec", borderRadius:10, padding:"10px 12px", marginBottom:8 }}>
                 <div style={{ fontSize:13, color:"#2d4a38", lineHeight:1.7 }}>{p.note}</div>
               </div>
@@ -195,14 +224,16 @@ export default function PlacesPage() {
 
       {showAdd && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430 }}>
+          <div style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:24, width:"100%", maxWidth:430, maxHeight:"90vh", overflowY:"auto" }}>
             <div style={{ fontWeight:700, fontSize:16, color:"#2d4a38", marginBottom:8 }}>📍 場所を投稿する</div>
             <div style={{ fontSize:11, color:"#8aaa95", marginBottom:14 }}>🔒 匿名で投稿されます。現在地の情報が使われます。</div>
+
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>場所の名前</div>
               <input placeholder="例：○○クリニック、△△薬局" value={newName} onChange={e => setNewName(e.target.value)}
                 style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box" }}/>
             </div>
+
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>カテゴリ</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -214,16 +245,31 @@ export default function PlacesPage() {
                 ))}
               </div>
             </div>
+
+            {/* 住所入力欄 */}
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>
+                住所 <span style={{ color:"#8aaa95", fontWeight:400 }}>（任意）タップでGoogleマップが開きます</span>
+              </div>
+              <input
+                placeholder="例：福岡県福岡市中央区天神1-1-1"
+                value={newAddress}
+                onChange={e => setNewAddress(e.target.value)}
+                style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box" }}
+              />
+            </div>
+
             <div style={{ marginBottom:14 }}>
               <div style={{ fontSize:12, color:"#5a7a65", marginBottom:6, fontWeight:600 }}>パニック障害の視点でのコメント</div>
               <textarea placeholder="例：出入口が複数あり安心。待合室が広く開放的です。" value={newNote} onChange={e => setNewNote(e.target.value)}
                 style={{ width:"100%", border:"1.5px solid #c8e6d0", borderRadius:10, padding:"10px 12px", fontSize:14, background:"#e8f5ec", outline:"none", boxSizing:"border-box", height:90, resize:"none", fontFamily:"inherit" }}/>
             </div>
+
             <button onClick={handleAdd} disabled={loading}
               style={{ width:"100%", background:"linear-gradient(135deg,#5ba872,#7bbf8c)", color:"#fff", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
               {loading ? "投稿中…" : "投稿する"}
             </button>
-            <button onClick={() => setShowAdd(false)}
+            <button onClick={() => { setShowAdd(false); setNewAddress(""); }}
               style={{ width:"100%", background:"#e8f5ec", color:"#4a9060", border:"none", borderRadius:12, padding:"13px", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               キャンセル
             </button>
